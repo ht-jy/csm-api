@@ -189,6 +189,7 @@ type ExcelService interface {
 	ImportTbm(ctx context.Context, path string, tbm entity.Tbm, file entity.UploadFile) error
 	ImportDeduction(ctx context.Context, path string, deduction entity.Deduction, file entity.UploadFile) error
 	ImportAddDailyWorker(ctx context.Context, path string, worker entity.WorkerDaily) (entity.WorkerDailys, error)
+	//ImportAddWorker(ctx context.Context, path string, worker entity.Worker) (entity.Workers, error)
 }
 
 type UploadFileService interface {
