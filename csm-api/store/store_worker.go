@@ -324,7 +324,7 @@ func (r *Repository) GetWorkerDepartList(ctx context.Context, db Queryer, jno in
 // func: 근로자 추가
 // @param
 // -
-func (r *Repository) AddWorker(ctx context.Context, tx Execer, worker entity.Worker) error {
+func (r *Repository) AddWorker(ctx context.Context, tx Execer, worker entity.Worker) (int64, error) {
 	agent := utils.GetAgent()
 
 	// IRIS_WORKER_SET에 INSERT하는 쿼리
@@ -347,6 +347,7 @@ func (r *Repository) AddWorker(ctx context.Context, tx Execer, worker entity.Wor
 			  AND (
 				(REG_NO = :16) OR (REG_NO IS NULL AND :17 IS NULL)
 			  )
+			AND IS_DEL = 'N'
 		)`
 
 	res, err := tx.ExecContext(ctx, insertQuery,
@@ -356,19 +357,14 @@ func (r *Repository) AddWorker(ctx context.Context, tx Execer, worker entity.Wor
 		worker.UserId, worker.UserNm, worker.RegNo, worker.RegNo,
 	)
 	if err != nil {
-		return utils.CustomErrorf(err)
+		return 0, utils.CustomErrorf(err)
 	}
 
 	rows, err := res.RowsAffected()
 	if err != nil {
-		return utils.CustomErrorf(err)
+		return 0, utils.CustomErrorf(err)
 	}
-
-	if rows == 0 {
-		return fmt.Errorf("등록 실패: 동일한 작업자가 이미 존재합니다 (USER_ID=%s, USER_NM=%s, REG_NO=%s)", worker.UserId, worker.UserNm, worker.RegNo)
-	}
-
-	return nil
+	return rows, nil
 }
 
 // func: 근로자 수정
@@ -422,6 +418,80 @@ func (r *Repository) ModifyWorker(ctx context.Context, tx Execer, worker entity.
 	}
 
 	return nil
+}
+
+// 근로자 엑셀 업로드
+func (r *Repository) MergeWorker(ctx context.Context, tx Execer, worker entity.Worker) (int64, error) {
+	agent := utils.GetAgent()
+
+	query := `
+		MERGE INTO IRIS_WORKER_SET W1
+		USING (
+			SELECT
+				:1 AS SNO, -- 현장번호 
+				:2 AS JNO, -- 프로젝트번호
+				:3 AS USER_NM, -- 이름
+				:4 AS REG_NO, -- 주민번호
+				:5 AS USER_ID, -- 아이디
+				:6 AS DEPARTMENT, -- 부서 / 조직명
+				:7 AS PHONE, -- 핸드폰번호
+				:8 AS DISC_NAME, -- 공종
+				:9 AS IS_RETIRE, -- 퇴직여부
+				(SELECT CODE FROM IRIS_CODE_SET WHERE P_CODE = 'WORKER_TYPE' AND CODE_NM = :10) AS WORKER_TYPE, -- 근로자구분
+				:11 AS USER_KEY, -- 유저키
+				:12 AS UNO, -- 등록자 UNO
+				:13 AS NAME, -- 등록자 NAME
+				:14 AS AGENT -- 등록자 AGENT
+			FROM DUAL
+		) W2
+		ON (
+			W1.USER_ID = W2.USER_ID
+			AND W1.USER_NM = W2.USER_NM
+			AND (
+				(W1.REG_NO = W2.REG_NO) OR (W1.REG_NO IS NULL AND W2.REG_NO IS NULL)
+			)
+			AND W1.IS_DEL = 'N'
+		) WHEN MATCHED THEN 
+			UPDATE SET 
+				W1.SNO = W2.SNO, 
+				W1.JNO = W2.JNO,
+				W1.DEPARTMENT = W2.DEPARTMENT,
+				W1.PHONE = W2.PHONE, 
+				W1.DISC_NAME = W2.DISC_NAME,
+				W1.IS_RETIRE = W2.IS_RETIRE, 
+				W1.WORKER_TYPE = W2.WORKER_TYPE,
+				W1.MOD_DATE = SYSDATE,
+				W1.MOD_UNO = W2.UNO,
+				W1.MOD_USER = W2.NAME,
+				W1.MOD_AGENT = W2.AGENT
+		WHEN NOT MATCHED THEN
+			INSERT (
+				SNO, JNO, USER_ID, USER_NM, DEPARTMENT,
+				DISC_NAME, PHONE, WORKER_TYPE, IS_RETIRE, IS_DEL,
+				REG_DATE, REG_AGENT, REG_USER, REG_UNO, REG_NO, USER_KEY
+			)
+			VALUES (
+				W2.SNO, W2.JNO, W2.USER_ID, W2.USER_NM, W2.DEPARTMENT,
+				W2.DISC_NAME, W2.PHONE, W2.WORKER_TYPE, W2.IS_RETIRE, 'N',
+				SYSDATE, W2.AGENT, W2.NAME, W2.UNO, W2.REG_NO, GET_IRIS_USER_UUID()
+			)
+		`
+	res, err := tx.ExecContext(ctx, query,
+		worker.Sno, worker.Jno, worker.UserNm, worker.RegNo,
+		worker.UserId, worker.Department, worker.Phone, worker.DiscName,
+		worker.IsRetire, worker.CodeNm, worker.UserKey, worker.RegUno, worker.RegUser, agent,
+	)
+	if err != nil {
+		return 0, utils.CustomErrorf(err)
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return 0, utils.CustomErrorf(err)
+	}
+
+	return rows, nil
+
 }
 
 // 근로자 삭제 처리
@@ -1066,7 +1136,7 @@ func (r *Repository) GetRecdWorkerUserKey(ctx context.Context, db Queryer, worke
 			AND (
 				REG_NO = :3
 				OR (REG_NO IS NULL AND :4 IS NULL)
-			)
+			) AND IS_DEL = 'N'
 			ORDER BY REG_DATE DESC
 		)
 		WHERE ROWNUM = 1`

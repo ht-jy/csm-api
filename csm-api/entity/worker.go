@@ -19,6 +19,7 @@ type Worker struct {
 	DiscName    null.String `json:"disc_name" db:"DISC_NAME"`   // 공종명
 	Phone       null.String `json:"phone" db:"PHONE"`
 	WorkerType  null.String `json:"worker_type" db:"WORKER_TYPE"`
+	CodeNm      null.String `json:"code_nm" db:"CODE_NM"`
 	IsUse       null.String `json:"is_use" db:"IS_USE"`
 	IsRetire    null.String `json:"is_retire" db:"IS_RETIRE"`
 	IsManage    null.String `json:"is_manage" db:"IS_MANAGE"`

@@ -196,9 +196,9 @@ func (h *HandlerExcel) ImportExcel(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else if fileType == "ADD_WORKER" {
-		reason := r.FormValue("reason")
-		reasonType := r.FormValue("reason_type")
-		worker := entity.WorkerDaily{
+		//reason := r.FormValue("reason")
+		//reasonType := r.FormValue("reason_type")
+		worker := entity.Worker{
 			Sno: utils.ParseNullInt(snoString),
 			Jno: utils.ParseNullInt(jnoString),
 			Base: entity.Base{
@@ -206,23 +206,19 @@ func (h *HandlerExcel) ImportExcel(w http.ResponseWriter, r *http.Request) {
 				RegUno:  utils.ParseNullInt(regUno),
 			},
 			WorkerReason: entity.WorkerReason{
-				Reason:     utils.ParseNullString(reason),
-				ReasonType: utils.ParseNullString(reasonType),
+				//Reason:     utils.ParseNullString(reason),
+				//ReasonType: utils.ParseNullString(reasonType),
 			},
 		}
-		list, err := h.Service.ImportAddDailyWorker(r.Context(), tempFilePath, worker)
+
+		list, err := h.Service.ImportAddWorker(r.Context(), tempFilePath, worker)
 		if err != nil {
 			FailResponse(r.Context(), w, err)
-			return
-		}
-		if len(list) == 0 {
-			FailResponse(r.Context(), w, utils.CustomErrorf(fmt.Errorf("failed to import data: %v", list)))
 			return
 		} else {
 			SuccessValuesResponse(r.Context(), w, list)
 			return
 		}
-
 	}
 
 	SuccessResponse(r.Context(), w)
@@ -404,7 +400,7 @@ func (h *HandlerExcel) TotalWorkerFormExport(w http.ResponseWriter, r *http.Requ
 	sheet := "Sheet1"
 
 	// 헤더
-	headers := []string{"No.", "이름", "생년월일", "아이디", "부서/조직명", "핸드폰번호", "공종", "퇴직여부", "근로자 구분"}
+	headers := []string{"No.", "이름", "주민등록번호", "아이디", "부서/조직명", "핸드폰번호", "공종", "퇴직여부", "근로자 구분"}
 	for i, header := range headers {
 		cell, _ := excelize.CoordinatesToCellName(i+1, 1)
 		f.SetCellValue(sheet, cell, header)
@@ -431,28 +427,6 @@ func (h *HandlerExcel) TotalWorkerFormExport(w http.ResponseWriter, r *http.Requ
 		},
 	})
 
-	dateFmt := "yyyy-mm-dd"
-	dateStyle, _ := f.NewStyle(&excelize.Style{
-		CustomNumFmt: &dateFmt,
-		Border: []excelize.Border{
-			{Type: "left", Color: "000000", Style: 1},
-			{Type: "right", Color: "000000", Style: 1},
-			{Type: "top", Color: "000000", Style: 1},
-			{Type: "bottom", Color: "000000", Style: 1},
-		},
-	})
-
-	//timeFmt := "hh:mm"
-	//timeStyle, _ := f.NewStyle(&excelize.Style{
-	//	CustomNumFmt: &timeFmt,
-	//	Border: []excelize.Border{
-	//		{Type: "left", Color: "000000", Style: 1},
-	//		{Type: "right", Color: "000000", Style: 1},
-	//		{Type: "top", Color: "000000", Style: 1},
-	//		{Type: "bottom", Color: "000000", Style: 1},
-	//	},
-	//})
-
 	phoneFmt := "000-0000-0000"
 	phoneStyle, _ := f.NewStyle(&excelize.Style{
 		CustomNumFmt: &phoneFmt,
@@ -464,14 +438,21 @@ func (h *HandlerExcel) TotalWorkerFormExport(w http.ResponseWriter, r *http.Requ
 		},
 	})
 
+	identityNumberFmt := "000000-0000000"
+	identityNumberStyle, _ := f.NewStyle(&excelize.Style{
+		CustomNumFmt: &identityNumberFmt,
+		Border: []excelize.Border{
+			{Type: "left", Color: "000000", Style: 1},
+			{Type: "right", Color: "000000", Style: 1},
+			{Type: "top", Color: "000000", Style: 1},
+			{Type: "bottom", Color: "000000", Style: 1},
+		},
+	})
 	f.SetCellStyle(sheet, "A1", "I1", headerStyle)
 
-	// 임시데이터 생성
-	birth, _ := time.Parse("2006.01.02", "1999.01.01")
-
 	rows := [][]interface{}{
-		{1, "홍길동1", birth, "010-1234-5678", "길동건설", "010-1234-5678", "비계", "TRUE", "-"},
-		{2, "홍길동2", birth, "010-1234-5678", "길동건설", "010-1234-5678", "굴삭기", "FALSE", "-"},
+		{1, "홍길동1", "990101-2111050", "010-1234-5678", "길동건설", "010-1234-5678", "비계", "TRUE", "-"},
+		{2, "홍길동2", "010101-3111050", "010-1234-5678", "길동건설", "010-1234-5678", "굴삭기", "FALSE", "-"},
 	}
 
 	// 셀 값 입력
@@ -492,12 +473,12 @@ func (h *HandlerExcel) TotalWorkerFormExport(w http.ResponseWriter, r *http.Requ
 
 	// 스타일 적용
 	f.SetCellStyle(sheet, "A2", "I50", borderStyle)
-	f.SetCellStyle(sheet, "C2", "C50", dateStyle)  // 생년월일 추가
-	f.SetCellStyle(sheet, "E2", "E50", phoneStyle) // 핸드폰번호
+	f.SetCellStyle(sheet, "C2", "C50", identityNumberStyle) // 주민등록번호 추가
+	f.SetCellStyle(sheet, "E2", "E50", phoneStyle)          // 핸드폰번호
 	//f.SetCellStyle(sheet, "H2", "H50", maskStyle)  // 퇴직여부
 
 	// 컬럼 너비
-	f.SetColWidth(sheet, "A", "I", 15)
+	f.SetColWidth(sheet, "A", "I", 16)
 
 	// 파일 이름 생성
 	fileName := "전체근로자 입력 양식.xlsx"
