@@ -6,6 +6,7 @@ import (
 	"csm-api/store"
 	"csm-api/txutil"
 	"csm-api/utils"
+	"fmt"
 	"github.com/guregu/null"
 	"time"
 )
@@ -110,9 +111,12 @@ func (s *ServiceWorker) AddWorker(ctx context.Context, worker entity.Worker) (er
 
 	defer txutil.DeferTx(tx, &err)
 
-	err = s.Store.AddWorker(ctx, tx, worker)
+	var count int64
+	count, err = s.Store.AddWorker(ctx, tx, worker)
 	if err != nil {
 		return utils.CustomErrorf(err)
+	} else if count == 0 {
+		return utils.CustomErrorf(fmt.Errorf("중복데이터 존재"))
 	}
 	return
 }

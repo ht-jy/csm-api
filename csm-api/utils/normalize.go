@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -60,4 +61,11 @@ func NormalizeHHMM(s string) string {
 
 	// 시, 분을 두 자리로 맞추고 초 추가
 	return fmt.Sprintf("%02s:%02s:00", hour, min)
+}
+
+func NormalizeBool(s string) bool {
+	reg := regexp.MustCompile(`[^a-zA-Z]`) // 한글, 영문, 숫자 외 제거
+	lower := strings.ToLower(reg.ReplaceAllString(strings.TrimSpace(s), ""))
+	result, _ := strconv.ParseBool(lower)
+	return result
 }

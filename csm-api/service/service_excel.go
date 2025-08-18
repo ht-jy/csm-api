@@ -364,3 +364,108 @@ func (s *ServiceExcel) ImportAddDailyWorker(ctx context.Context, path string, wo
 
 	return
 }
+
+// 전체근로자 업로드
+func (s *ServiceExcel) ImportAddWorker(ctx context.Context, path string, worker entity.Worker) (successList entity.Workers, err error) {
+	f, err := excelize.OpenFile(path)
+	if err != nil {
+		return successList, utils.CustomErrorf(err)
+	}
+
+	sheet := f.GetSheetName(0)
+	var excels entity.Workers
+
+	row := 2
+	for {
+		// B: (이름) 기준으로 값이 없으면 종료
+		userNm, err := f.GetCellValue(sheet, fmt.Sprintf("B%d", row))
+		if err != nil || strings.TrimSpace(userNm) == "" {
+			break
+		}
+		// C: 주민등록번호
+		identityNumberRaw, _ := f.GetCellValue(sheet, fmt.Sprintf("C%d", row))
+		regNo := strings.ReplaceAll(identityNumberRaw, "-", "")
+		if len(regNo) == 8 {
+			regNo = regNo[2:] // 앞 2자리 제거
+		}
+		// D: 아이디
+		rawId, _ := f.GetCellValue(sheet, fmt.Sprintf("D%d", row))
+		normalizedId := strings.ReplaceAll(strings.ReplaceAll(rawId, "-", ""), " ", "")
+		if strings.HasPrefix(normalizedId, "1") {
+			normalizedId = "0" + normalizedId
+		}
+		// E: 부서/조직명
+		department, _ := f.GetCellValue(sheet, fmt.Sprintf("E%d", row))
+
+		// F: 핸드폰 번호
+		rawPhone, _ := f.GetCellValue(sheet, fmt.Sprintf("D%d", row))
+		normalizedPhone := strings.ReplaceAll(strings.ReplaceAll(rawPhone, "-", ""), " ", "")
+		if strings.HasPrefix(normalizedPhone, "1") {
+			normalizedPhone = "0" + normalizedPhone
+		}
+
+		// G: 공종
+		discName, _ := f.GetCellValue(sheet, fmt.Sprintf("G%d", row))
+
+		// H: 퇴직여부
+		retire, _ := f.GetCellValue(sheet, fmt.Sprintf("H%d", row))
+		var isRetire string
+		if utils.NormalizeBool(retire) {
+			isRetire = "Y"
+		} else {
+			isRetire = "N"
+		}
+
+		// 근로자 구분
+		codeNm, _ := f.GetCellValue(sheet, fmt.Sprintf("I%d", row))
+
+		newWorker := &entity.Worker{
+			Sno:        worker.Sno,
+			Jno:        worker.Jno,
+			UserNm:     utils.ParseNullString(userNm),
+			RegNo:      utils.ParseNullString(identityNumberRaw),
+			UserId:     utils.ParseNullString(normalizedId),
+			Department: utils.ParseNullString(department),
+			Phone:      utils.ParseNullString(normalizedPhone),
+			DiscName:   utils.ParseNullString(discName),
+			IsRetire:   utils.ParseNullString(isRetire),
+			CodeNm:     utils.ParseNullString(codeNm),
+			Base: entity.Base{
+				RegUser: worker.RegUser,
+				RegUno:  worker.RegUno,
+			},
+			WorkerReason: entity.WorkerReason{
+				Reason:     worker.Reason,
+				ReasonType: worker.ReasonType,
+				HisStatus:  utils.ParseNullString("AFTER"),
+			},
+		}
+
+		excels = append(excels, newWorker)
+
+		row++
+	}
+
+	tx, err := txutil.BeginTxWithMode(ctx, s.SafeTDB, false)
+	if err != nil {
+		return successList, utils.CustomErrorf(err)
+	}
+
+	defer txutil.DeferTx(tx, &err)
+
+	var count int64
+	var failList entity.Workers
+	// 업로드 데이터 추가/수정
+	for _, excelWorker := range excels {
+
+		if count, err = s.WorkerStore.MergeWorker(ctx, tx, *excelWorker); err != nil {
+			return successList, utils.CustomErrorf(err)
+		} else if count != 0 {
+			successList = append(successList, excelWorker)
+		} else {
+			failList = append(failList, excelWorker)
+		}
+	}
+
+	return
+}

@@ -54,6 +54,7 @@ func (g *UserValid) GetUserValid(ctx context.Context, userId string, userPwd str
 		return user, nil
 	}
 
+	// 프로젝트 권한 확인
 	var role string
 	role, err = g.UserService.GetUserRole(ctx, 0, user.Uno)
 	if err != nil {

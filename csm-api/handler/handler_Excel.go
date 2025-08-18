@@ -195,6 +195,30 @@ func (h *HandlerExcel) ImportExcel(w http.ResponseWriter, r *http.Request) {
 			SuccessValuesResponse(r.Context(), w, list)
 			return
 		}
+	} else if fileType == "ADD_WORKER" {
+		//reason := r.FormValue("reason")
+		//reasonType := r.FormValue("reason_type")
+		worker := entity.Worker{
+			Sno: utils.ParseNullInt(snoString),
+			Jno: utils.ParseNullInt(jnoString),
+			Base: entity.Base{
+				RegUser: utils.ParseNullString(regUser),
+				RegUno:  utils.ParseNullInt(regUno),
+			},
+			WorkerReason: entity.WorkerReason{
+				//Reason:     utils.ParseNullString(reason),
+				//ReasonType: utils.ParseNullString(reasonType),
+			},
+		}
+
+		list, err := h.Service.ImportAddWorker(r.Context(), tempFilePath, worker)
+		if err != nil {
+			FailResponse(r.Context(), w, err)
+			return
+		} else {
+			SuccessValuesResponse(r.Context(), w, list)
+			return
+		}
 	}
 
 	SuccessResponse(r.Context(), w)
@@ -355,6 +379,109 @@ func (h *HandlerExcel) DailyWorkerFormExport(w http.ResponseWriter, r *http.Requ
 
 	// 파일 이름 생성
 	fileName := "현장근로자 입력 양식.xlsx"
+	encodedName := url.PathEscape(fileName)
+
+	w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename*=UTF-8''%s", encodedName))
+	w.Header().Set("File-Name", fileName)
+	w.Header().Set("Content-Transfer-Encoding", "binary")
+	w.Header().Set("Access-Control-Expose-Headers", "Content-Disposition, File-Name")
+
+	// 파일 출력
+	if err := f.Write(w); err != nil {
+		FailResponse(r.Context(), w, utils.CustomErrorf(fmt.Errorf("excel file write error: %v", err)))
+		return
+	}
+}
+
+// 전체 근로자 엑셀 양식 다운로드
+func (h *HandlerExcel) TotalWorkerFormExport(w http.ResponseWriter, r *http.Request) {
+	f := excelize.NewFile()
+	sheet := "Sheet1"
+
+	// 헤더
+	headers := []string{"No.", "이름", "주민등록번호", "아이디", "부서/조직명", "핸드폰번호", "공종", "퇴직여부", "근로자 구분"}
+	for i, header := range headers {
+		cell, _ := excelize.CoordinatesToCellName(i+1, 1)
+		f.SetCellValue(sheet, cell, header)
+	}
+
+	// 스타일
+	headerStyle, _ := f.NewStyle(&excelize.Style{
+		Font: &excelize.Font{Bold: true},
+		Fill: excelize.Fill{Type: "pattern", Color: []string{"#C6EFCE"}, Pattern: 1},
+		Border: []excelize.Border{
+			{Type: "left", Color: "000000", Style: 1},
+			{Type: "right", Color: "000000", Style: 1},
+			{Type: "top", Color: "000000", Style: 1},
+			{Type: "bottom", Color: "000000", Style: 1},
+		},
+		Alignment: &excelize.Alignment{Horizontal: "center"},
+	})
+	borderStyle, _ := f.NewStyle(&excelize.Style{
+		Border: []excelize.Border{
+			{Type: "left", Color: "000000", Style: 1},
+			{Type: "right", Color: "000000", Style: 1},
+			{Type: "top", Color: "000000", Style: 1},
+			{Type: "bottom", Color: "000000", Style: 1},
+		},
+	})
+
+	phoneFmt := "000-0000-0000"
+	phoneStyle, _ := f.NewStyle(&excelize.Style{
+		CustomNumFmt: &phoneFmt,
+		Border: []excelize.Border{
+			{Type: "left", Color: "000000", Style: 1},
+			{Type: "right", Color: "000000", Style: 1},
+			{Type: "top", Color: "000000", Style: 1},
+			{Type: "bottom", Color: "000000", Style: 1},
+		},
+	})
+
+	identityNumberFmt := "000000-0000000"
+	identityNumberStyle, _ := f.NewStyle(&excelize.Style{
+		CustomNumFmt: &identityNumberFmt,
+		Border: []excelize.Border{
+			{Type: "left", Color: "000000", Style: 1},
+			{Type: "right", Color: "000000", Style: 1},
+			{Type: "top", Color: "000000", Style: 1},
+			{Type: "bottom", Color: "000000", Style: 1},
+		},
+	})
+	f.SetCellStyle(sheet, "A1", "I1", headerStyle)
+
+	rows := [][]interface{}{
+		{1, "홍길동1", "990101-2111050", "010-1234-5678", "길동건설", "010-1234-5678", "비계", "TRUE", "-"},
+		{2, "홍길동2", "010101-3111050", "010-1234-5678", "길동건설", "010-1234-5678", "굴삭기", "FALSE", "-"},
+	}
+
+	// 셀 값 입력
+	for rowIdx, row := range rows {
+		for colIdx, val := range row {
+			cell, _ := excelize.CoordinatesToCellName(colIdx+1, rowIdx+2)
+			f.SetCellValue(sheet, cell, val)
+		}
+	}
+
+	// 드롭박스
+	dv := excelize.NewDataValidation(true)
+	dv.Sqref = "I2:I50"
+	_ = dv.SetDropList([]string{"-", "HTENC", "협력사", "일일근로자"})
+	dv.SetInput("선택", "목록에서 항목을 선택하세요.")
+	dv.SetError(excelize.DataValidationErrorStyleStop, "입력 오류", "목록에 없는 값은 입력할 수 없습니다.")
+	_ = f.AddDataValidation("Sheet1", dv)
+
+	// 스타일 적용
+	f.SetCellStyle(sheet, "A2", "I50", borderStyle)
+	f.SetCellStyle(sheet, "C2", "C50", identityNumberStyle) // 주민등록번호 추가
+	f.SetCellStyle(sheet, "E2", "E50", phoneStyle)          // 핸드폰번호
+	//f.SetCellStyle(sheet, "H2", "H50", maskStyle)  // 퇴직여부
+
+	// 컬럼 너비
+	f.SetColWidth(sheet, "A", "I", 16)
+
+	// 파일 이름 생성
+	fileName := "전체근로자 입력 양식.xlsx"
 	encodedName := url.PathEscape(fileName)
 
 	w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
