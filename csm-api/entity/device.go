@@ -8,8 +8,10 @@ type Device struct {
 	Sno      null.Int    `json:"sno" db:"SNO"`             // 현장 고유번호
 	DeviceSn null.String `json:"device_sn" db:"DEVICE_SN"` // 홍채인식기 시리얼번호
 	DeviceNm null.String `json:"device_nm" db:"DEVICE_NM"` // 홍채인식기 장치명
-	Etc      null.String `json:"etc" db:"ETC"`             // 비고
-	IsUse    null.String `json:"is_use" db:"IS_USE"`       // 사용여부
+	Jno      null.Int    `json:"jno" db:"JNO"`
+	JobName  null.String `json:"job_name" db:"JOB_NAME"`
+	Etc      null.String `json:"etc" db:"ETC"`       // 비고
+	IsUse    null.String `json:"is_use" db:"IS_USE"` // 사용여부
 	SiteNm   null.String `json:"site_nm" db:"SITE_NM"`
 	Base
 }

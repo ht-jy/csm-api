@@ -6,6 +6,7 @@ import (
 	"csm-api/utils"
 	"database/sql"
 	"errors"
+	"fmt"
 )
 
 func (r *Repository) GetSitePosList(ctx context.Context, db Queryer) ([]entity.SitePos, error) {
@@ -178,7 +179,13 @@ func (r *Repository) ModifySitePosData(ctx context.Context, tx Execer, sno int64
 // -
 func (r *Repository) ModifySitePosIsNonUse(ctx context.Context, tx Execer, site entity.ReqSite) error {
 	agent := utils.GetAgent()
-	query := `
+
+	var jnoCondition string
+	if site.Jno.Valid {
+		jnoCondition = fmt.Sprintf(`AND JNO = %d`, site.Jno.Int64)
+	}
+
+	query := fmt.Sprintf(`
 			UPDATE IRIS_SITE_POS
 			SET 
 			    IS_USE = 'N',
@@ -186,7 +193,8 @@ func (r *Repository) ModifySitePosIsNonUse(ctx context.Context, tx Execer, site 
 				MOD_USER = :2,
 				MOD_UNO = :3,
 				MOD_DATE = SYSDATE
-			WHERE SNO = :1`
+			WHERE SNO = :4
+			%s`, jnoCondition)
 	if _, err := tx.ExecContext(ctx, query, agent, site.ModUser, site.ModUno, site.Sno); err != nil {
 		return utils.CustomErrorf(err)
 	}
@@ -199,7 +207,13 @@ func (r *Repository) ModifySitePosIsNonUse(ctx context.Context, tx Execer, site 
 // -
 func (r *Repository) ModifySitePosIsUse(ctx context.Context, tx Execer, site entity.ReqSite) error {
 	agent := utils.GetAgent()
-	query := `
+
+	var jnoCondition string
+	if site.Jno.Valid {
+		jnoCondition = fmt.Sprintf(`AND JNO = %d`, site.Jno.Int64)
+	}
+
+	query := fmt.Sprintf(`
 			UPDATE IRIS_SITE_POS
 			SET 
 			    IS_USE = 'Y',
@@ -207,7 +221,8 @@ func (r *Repository) ModifySitePosIsUse(ctx context.Context, tx Execer, site ent
 				MOD_USER = :2,
 				MOD_UNO = :3,
 				MOD_DATE = SYSDATE
-			WHERE SNO = :1`
+			WHERE SNO = :4
+			%s`, jnoCondition)
 	if _, err := tx.ExecContext(ctx, query, agent, site.ModUser, site.ModUno, site.Sno); err != nil {
 		return utils.CustomErrorf(err)
 	}

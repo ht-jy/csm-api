@@ -51,6 +51,7 @@ type Sites []*Site
 
 type ReqSite struct {
 	Sno null.Int `json:"sno" db:"SNO"`
+	Jno null.Int `json:"jno" db:"JNO"`
 	Base
 }
 

@@ -39,27 +39,27 @@ type HandlerExcel struct {
 func (h *HandlerExcel) ImportExcel(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseMultipartForm(10 << 20) // 최대 10MB
 	if err != nil {
-		FailResponse(r.Context(), w, utils.CustomErrorf(fmt.Errorf("failed to parse multipart form: %v", err)))
+		FailResponseMessage(r.Context(), w, utils.CustomErrorf(fmt.Errorf("failed to parse multipart form: %v", err)), "파일 업로드 처리 중 오류가 발생했습니다. (최대 10MB까지 업로드 가능합니다)")
 		return
 	}
 
 	// 파일 받기
 	file, header, err := r.FormFile("file")
 	if err != nil {
-		FailResponse(r.Context(), w, utils.CustomErrorf(fmt.Errorf("failed to receive the file: %v", err)))
+		FailResponseMessage(r.Context(), w, utils.CustomErrorf(fmt.Errorf("failed to receive the file: %v", err)), "파일을 받는 중 오류가 발생했습니다. 다시 시도해주세요.")
 		return
 	}
 	defer func(file multipart.File) {
 		err = file.Close()
 		if err != nil {
-			FailResponse(r.Context(), w, utils.CustomErrorf(fmt.Errorf("failed to file Close: %v", err)))
+			FailResponseMessage(r.Context(), w, utils.CustomErrorf(fmt.Errorf("failed to file Close: %v", err)), "파일 처리 중 오류가 발생했습니다.")
 			return
 		}
 	}(file)
 
 	// 엑셀 파일 확장자 검사
 	if !(len(header.Filename) > 5 && (header.Filename[len(header.Filename)-5:] == ".xlsx" || header.Filename[len(header.Filename)-4:] == ".xls")) {
-		FailResponse(r.Context(), w, utils.CustomErrorf(fmt.Errorf("only Excel files (.xlsx, .xls) are allowed")))
+		FailResponseMessage(r.Context(), w, utils.CustomErrorf(fmt.Errorf("only Excel files (.xlsx, .xls) are allowed")), "엑셀 파일(.xlsx, .xls)만 업로드할 수 있습니다.")
 		return
 	}
 
@@ -76,7 +76,7 @@ func (h *HandlerExcel) ImportExcel(w http.ResponseWriter, r *http.Request) {
 	// 추가 파일 경로
 	addDir := r.FormValue("add_dir")
 	if workDate == "" || fileType == "" || jnoString == "" {
-		FailResponse(r.Context(), w, utils.CustomErrorf(fmt.Errorf("missing 'file_date' or 'jno' or 'file_type' field")))
+		FailResponseMessage(r.Context(), w, utils.CustomErrorf(fmt.Errorf("missing 'file_date' or 'jno' or 'file_type' field")), "필수 입력값이 누락되었습니다. (파일 날짜, 현장번호, 파일 유형)")
 		return
 	}
 	regUser := r.FormValue("reg_user")
@@ -84,7 +84,7 @@ func (h *HandlerExcel) ImportExcel(w http.ResponseWriter, r *http.Request) {
 
 	dates := strings.Split(workDate, "-")
 	if len(dates) != 3 {
-		FailResponse(r.Context(), w, utils.CustomErrorf(fmt.Errorf("invalid 'file_date' format (expected: YYYY-MM-DD)")))
+		FailResponseMessage(r.Context(), w, utils.CustomErrorf(fmt.Errorf("invalid 'file_date' format (expected: YYYY-MM-DD)")), "파일 날짜 형식이 올바르지 않습니다. 예: YYYY-MM-DD")
 		return
 	}
 
@@ -101,20 +101,20 @@ func (h *HandlerExcel) ImportExcel(w http.ResponseWriter, r *http.Request) {
 	}
 	err = os.MkdirAll(dir, os.ModePerm)
 	if err != nil {
-		FailResponse(r.Context(), w, utils.CustomErrorf(fmt.Errorf("failed to create upload directory: %v", err)))
+		FailResponseMessage(r.Context(), w, utils.CustomErrorf(fmt.Errorf("failed to create upload directory: %v", err)), "업로드할 폴더를 생성하는 중 오류가 발생했습니다.")
 		return
 	}
 
 	tempFilePath := filepath.Join(dir, header.Filename)
 	outFile, err := os.Create(tempFilePath)
 	if err != nil {
-		FailResponse(r.Context(), w, utils.CustomErrorf(fmt.Errorf("failed to create a temporary file: %v", err)))
+		FailResponseMessage(r.Context(), w, utils.CustomErrorf(fmt.Errorf("failed to create a temporary file: %v", err)), "임시 파일을 생성하는 중 오류가 발생했습니다.")
 		return
 	}
 	defer func(outFile *os.File) {
 		err = outFile.Close()
 		if err != nil {
-			FailResponse(r.Context(), w, utils.CustomErrorf(fmt.Errorf("failed to outFile Close: %v", err)))
+			FailResponseMessage(r.Context(), w, utils.CustomErrorf(fmt.Errorf("failed to outFile Close: %v", err)), "파일을 닫는 중 오류가 발생했습니다.")
 			return
 		}
 	}(outFile)
@@ -122,7 +122,7 @@ func (h *HandlerExcel) ImportExcel(w http.ResponseWriter, r *http.Request) {
 	// 파일 복사(저장)
 	_, err = io.Copy(outFile, file)
 	if err != nil {
-		FailResponse(r.Context(), w, utils.CustomErrorf(fmt.Errorf("failed to save the uploaded file: %v", err)))
+		FailResponseMessage(r.Context(), w, utils.CustomErrorf(fmt.Errorf("failed to save the uploaded file: %v", err)), "업로드한 파일을 저장하는 중 오류가 발생했습니다. 다시 시도해주세요.")
 		return
 	}
 
@@ -151,7 +151,7 @@ func (h *HandlerExcel) ImportExcel(w http.ResponseWriter, r *http.Request) {
 			},
 		}
 		if err = h.Service.ImportTbm(r.Context(), tempFilePath, tbm, uploadFile); err != nil {
-			FailResponse(r.Context(), w, err)
+			FailResponseMessage(r.Context(), w, err, "TBM 엑셀파일을 업로드하는데 실패하였습니다. 다시 시도하여 주세요")
 			return
 		}
 	} else if fileType == "DEDUCTION" {
@@ -164,7 +164,7 @@ func (h *HandlerExcel) ImportExcel(w http.ResponseWriter, r *http.Request) {
 			},
 		}
 		if err = h.Service.ImportDeduction(r.Context(), tempFilePath, deduction, uploadFile); err != nil {
-			FailResponse(r.Context(), w, err)
+			FailResponseMessage(r.Context(), w, err, "퇴직공제 엑셀파일을 업로드하는데 실패하였습니다. 다시 시도하여 주세요")
 			return
 		}
 	} else if fileType == "ADD_DAILY_WORKER" {
@@ -185,11 +185,11 @@ func (h *HandlerExcel) ImportExcel(w http.ResponseWriter, r *http.Request) {
 		}
 		list, err := h.Service.ImportAddDailyWorker(r.Context(), tempFilePath, workDaily)
 		if err != nil {
-			FailResponse(r.Context(), w, err)
+			FailResponseMessage(r.Context(), w, err, "현장근로자 엑셀파일을 업로드하는데 실패하였습니다. 다시 시도하여 주세요")
 			return
 		}
 		if len(list) == 0 {
-			FailResponse(r.Context(), w, utils.CustomErrorf(fmt.Errorf("failed to import data: %v", list)))
+			FailResponseMessage(r.Context(), w, utils.CustomErrorf(fmt.Errorf("failed to import data: %v", list)), "추가에 성공한 근로자가 없습니다. 엑셀 파일을 확인 후 다시 시도하여 주세요.")
 			return
 		} else {
 			SuccessValuesResponse(r.Context(), w, list)

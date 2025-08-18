@@ -248,6 +248,52 @@ func (h *HandlerSite) ModifyUse(w http.ResponseWriter, r *http.Request) {
 	SuccessResponse(ctx, w)
 }
 
+// func: 현장 프로젝트 사용안함 변경
+// @param
+// -
+func (h *HandlerSite) ModifySiteJobNonUse(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	reqSite := entity.ReqSite{}
+	if err := json.NewDecoder(r.Body).Decode(&reqSite); err != nil {
+		FailResponse(ctx, w, err)
+		return
+	}
+	if reqSite.Jno.Valid == false || reqSite.Sno.Valid == false {
+		BadRequestResponse(ctx, w)
+		return
+	}
+
+	if err := h.Service.ModifySiteJobNonUse(ctx, reqSite); err != nil {
+		FailResponse(ctx, w, err)
+	}
+
+	SuccessResponse(ctx, w)
+}
+
+// func: 현장 프로젝트 사용으로 변경
+// @param
+// -
+func (h *HandlerSite) ModifySiteJobUse(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	reqSite := entity.ReqSite{}
+	if err := json.NewDecoder(r.Body).Decode(&reqSite); err != nil {
+		FailResponse(ctx, w, err)
+		return
+	}
+	if reqSite.Jno.Valid == false || reqSite.Sno.Valid == false {
+		BadRequestResponse(ctx, w)
+		return
+	}
+
+	if err := h.Service.ModifySiteJobUse(ctx, reqSite); err != nil {
+		FailResponse(ctx, w, err)
+	}
+
+	SuccessResponse(ctx, w)
+}
+
 // 공정률 수정
 func (h *HandlerSite) ModifyWorkRate(w http.ResponseWriter, r *http.Request) {
 	var workRate entity.SiteWorkRate

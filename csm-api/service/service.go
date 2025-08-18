@@ -24,6 +24,8 @@ type SiteService interface {
 	AddSite(ctx context.Context, jno int64, user entity.User) error
 	ModifySiteIsNonUse(ctx context.Context, site entity.ReqSite) error
 	ModifySiteIsUse(ctx context.Context, site entity.ReqSite) error
+	ModifySiteJobNonUse(ctx context.Context, site entity.ReqSite) error
+	ModifySiteJobUse(ctx context.Context, site entity.ReqSite) error
 	SettingWorkRate(ctx context.Context, targetDate time.Time) (int64, error)
 	ModifyWorkRate(ctx context.Context, workRate entity.SiteWorkRate) error
 	GetSiteWorkRateByDate(ctx context.Context, jno int64, month string) (entity.SiteWorkRate, error)
@@ -46,8 +48,8 @@ type ProjectService interface {
 	GetProjectList(ctx context.Context, sno int64, targetDate time.Time) (*entity.ProjectInfos, error)
 	GetProjectWorkerCountList(ctx context.Context, targetDate time.Time) (*entity.ProjectInfos, error)
 	GetProjectNmList(ctx context.Context, isRole bool) (*entity.ProjectInfos, error)
-	GetUsedProjectList(ctx context.Context, page entity.Page, search entity.JobInfo, retry string, includeJno string) (*entity.JobInfos, error)
-	GetUsedProjectCount(ctx context.Context, search entity.JobInfo, retry string, includeJno string) (int, error)
+	GetUsedProjectList(ctx context.Context, page entity.Page, search entity.JobInfo, retry string, includeJno string, snoString string) (*entity.JobInfos, error)
+	GetUsedProjectCount(ctx context.Context, search entity.JobInfo, retry string, includeJno string, snoString string) (int, error)
 	GetAllProjectList(ctx context.Context, page entity.Page, search entity.JobInfo, isAll int, retry string) (*entity.JobInfos, error)
 	GetAllProjectCount(ctx context.Context, search entity.JobInfo, isAll int, retry string) (int, error)
 	GetStaffProjectList(ctx context.Context, page entity.Page, search entity.JobInfo, uno int64, retry string) (*entity.JobInfos, error)

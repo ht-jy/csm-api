@@ -284,6 +284,7 @@ func (s *ServiceExcel) ImportAddDailyWorker(ctx context.Context, path string, wo
 	}
 
 	var workers entity.WorkerDailys
+	var nonWorkers entity.WorkerDailys
 	regDate := null.NewTime(time.Now(), true)
 	for _, excel := range excels {
 		temp := entity.WorkerDaily{
@@ -313,10 +314,14 @@ func (s *ServiceExcel) ImportAddDailyWorker(ctx context.Context, path string, wo
 
 		var userKey string
 		if userKey, err = s.WorkerStore.GetDailyWorkerUserKey(ctx, s.SafeDB, temp); err != nil {
-			continue
+			// 조회된 전체근로자가 없는 경우
+			temp.FailReason = utils.ParseNullString("해당 근로자가 등록되어 있지 않습니다")
+			nonWorkers = append(nonWorkers, &temp)
+		} else {
+			// 조회된 전체근로자가 있는 경우
+			temp.UserKey = utils.ParseNullString(userKey)
+			workers = append(workers, &temp)
 		}
-		temp.UserKey = utils.ParseNullString(userKey)
-		workers = append(workers, &temp)
 	}
 
 	// 업로드 전 데이터 조회
@@ -354,6 +359,8 @@ func (s *ServiceExcel) ImportAddDailyWorker(ctx context.Context, path string, wo
 	if err = s.WorkerStore.AddHistoryDailyWorkers(ctx, tx, beforeList); err != nil {
 		return list, utils.CustomErrorf(err)
 	}
+
+	list = append(list, nonWorkers...)
 
 	return
 }

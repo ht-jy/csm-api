@@ -60,6 +60,7 @@ type WorkerDaily struct {
 	BeforeState     null.String `json:"before_state" db:"BEFORE_STATE"`
 	AfterState      null.String `json:"after_state" db:"AFTER_STATE"`
 	Message         null.String `json:"message" db:"MESSAGE"`
+	FailReason      null.String `json:"fail_reason" db:"FAIL_REASON"`
 	WorkerReason
 	Base
 }

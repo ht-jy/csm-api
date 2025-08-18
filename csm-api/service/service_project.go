@@ -134,14 +134,14 @@ func (p *ServiceProject) GetProjectNmList(ctx context.Context, isRole bool) (*en
 // func: 공사관리시스템 등록 프로젝트 전체 조회
 // @param
 // -
-func (p *ServiceProject) GetUsedProjectList(ctx context.Context, page entity.Page, search entity.JobInfo, retry string, includeJno string) (*entity.JobInfos, error) {
+func (p *ServiceProject) GetUsedProjectList(ctx context.Context, page entity.Page, search entity.JobInfo, retry string, includeJno string, snoString string) (*entity.JobInfos, error) {
 	pageSql := entity.PageSql{}
 	pageSql, err := pageSql.OfPageSql(page)
 	if err != nil {
 		return &entity.JobInfos{}, utils.CustomErrorf(err)
 	}
 
-	jobInfos, err := p.Store.GetUsedProjectList(ctx, p.SafeDB, pageSql, search, retry, includeJno)
+	jobInfos, err := p.Store.GetUsedProjectList(ctx, p.SafeDB, pageSql, search, retry, includeJno, snoString)
 	if err != nil {
 		return &entity.JobInfos{}, utils.CustomErrorf(err)
 	}
@@ -152,8 +152,8 @@ func (p *ServiceProject) GetUsedProjectList(ctx context.Context, page entity.Pag
 // func: 프로젝트 전체 조회 개수
 // @param
 // -
-func (p *ServiceProject) GetUsedProjectCount(ctx context.Context, search entity.JobInfo, retry string, includeJno string) (int, error) {
-	count, err := p.Store.GetUsedProjectCount(ctx, p.SafeDB, search, retry, includeJno)
+func (p *ServiceProject) GetUsedProjectCount(ctx context.Context, search entity.JobInfo, retry string, includeJno string, snoString string) (int, error) {
+	count, err := p.Store.GetUsedProjectCount(ctx, p.SafeDB, search, retry, includeJno, snoString)
 	if err != nil {
 		return 0, utils.CustomErrorf(err)
 	}

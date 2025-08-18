@@ -81,6 +81,8 @@ func (r *Repository) GetDeviceList(ctx context.Context, db Queryer, page entity.
 						SELECT 
 							t1.DNO,
 							t1.SNO,
+							t1.JNO,
+							t3.JOB_NAME AS JOB_NAME,
 							t2.SITE_NM,
 							t1.DEVICE_SN,
 							t1.DEVICE_NM,
@@ -94,6 +96,7 @@ func (r *Repository) GetDeviceList(ctx context.Context, db Queryer, page entity.
 							IRIS_SITE_SET t2 
 						ON 
 							t1.SNO = t2.SNO
+						LEFT JOIN S_JOB_INFO T3 ON T3.JNO = t1.JNO
  						WHERE 
 							t1.SNO >= 100
 							%s %s
@@ -193,6 +196,7 @@ func (r *Repository) AddDevice(ctx context.Context, tx Execer, device entity.Dev
 					SNO, 
 					DEVICE_SN, 
 					DEVICE_NM, 
+					JNO,
 					ETC, 
 					IS_USE, 
 					REG_DATE, 
@@ -205,11 +209,12 @@ func (r *Repository) AddDevice(ctx context.Context, tx Execer, device entity.Dev
 				    :3,
 				    :4,
 				    :5,
-				    SYSDATE,
 				    :6,
-				    :7    
+				    SYSDATE,
+				    :7,
+				    :8    
 				)`
-	if _, err := tx.ExecContext(ctx, query, device.Sno, device.DeviceSn, device.DeviceNm, device.Etc, device.IsUse, agent, device.RegUser); err != nil {
+	if _, err := tx.ExecContext(ctx, query, device.Sno, device.DeviceSn, device.DeviceNm, device.Jno, device.Etc, device.IsUse, agent, device.RegUser); err != nil {
 		return utils.CustomErrorf(err)
 	}
 
@@ -232,10 +237,11 @@ func (r *Repository) ModifyDevice(ctx context.Context, tx Execer, device entity.
 					IS_USE = :5, 
 					MOD_DATE = SYSDATE,
 					MOD_USER = :6,
-					MOD_AGENT = :7 
-				WHERE DNO = :8`
+					MOD_AGENT = :7, 
+					JNO = :8
+				WHERE DNO = :9`
 
-	if _, err := tx.ExecContext(ctx, query, device.Sno, device.DeviceSn, device.DeviceNm, device.Etc, device.IsUse, device.ModUser, agent, device.Dno); err != nil {
+	if _, err := tx.ExecContext(ctx, query, device.Sno, device.DeviceSn, device.DeviceNm, device.Etc, device.IsUse, device.ModUser, agent, device.Jno, device.Dno); err != nil {
 		return utils.CustomErrorf(err)
 	}
 	return nil

@@ -96,7 +96,7 @@ func (r *Repository) ModifySiteDateIsUse(ctx context.Context, tx Execer, site en
 				MOD_USER = :2,
 				MOD_UNO = :3,
 				MOD_DATE = SYSDATE
-			WHERE SNO = :1`
+			WHERE SNO = :4`
 	if _, err := tx.ExecContext(ctx, query, agent, site.ModUser, site.ModUno, site.Sno); err != nil {
 		return utils.CustomErrorf(err)
 	}

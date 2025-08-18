@@ -390,7 +390,7 @@ func (r *Repository) ModifyWorker(ctx context.Context, tx Execer, worker entity.
 					R.REG_NO           = :10,
 					R.IS_MANAGE        = :11,
 					R.DISC_NAME        = :12
-				WHERE R.USER_KEY = :15
+				WHERE R.USER_KEY = :13
 				  AND EXISTS (
 						SELECT 1
 						FROM IRIS_SITE_JOB J
@@ -400,9 +400,8 @@ func (r *Repository) ModifyWorker(ctx context.Context, tx Execer, worker entity.
 
 	result, err := tx.ExecContext(ctx, query,
 		worker.UserNm, worker.Department, worker.Phone, worker.WorkerType, worker.IsRetire,
-		worker.RetireDate /*, SYSDATE*/, agent, worker.ModUser, worker.ModUno,
-		worker.RegNo, worker.IsManage, worker.DiscName,
-		worker.UserKey,
+		worker.RetireDate, agent, worker.ModUser, worker.ModUno, worker.RegNo,
+		worker.IsManage, worker.DiscName, worker.UserKey,
 	)
 
 	if err != nil {

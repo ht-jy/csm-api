@@ -379,7 +379,7 @@ func (r *Repository) GetProjectNmList(ctx context.Context, db Queryer, role int,
 // func: 공사관리시스템 등록 프로젝트 전체 조회
 // @param
 // -
-func (r *Repository) GetUsedProjectList(ctx context.Context, db Queryer, pageSql entity.PageSql, search entity.JobInfo, retry string, includeJno string) (*entity.JobInfos, error) {
+func (r *Repository) GetUsedProjectList(ctx context.Context, db Queryer, pageSql entity.PageSql, search entity.JobInfo, retry string, includeJno string, snoString string) (*entity.JobInfos, error) {
 	list := entity.JobInfos{}
 
 	condition := ""
@@ -416,6 +416,12 @@ func (r *Repository) GetUsedProjectList(ctx context.Context, db Queryer, pageSql
 			)`, parseInt)
 	}
 
+	var snoCondition string
+	if snoString != "undefined" && snoString != "" {
+		parseInt, _ := strconv.ParseInt(snoString, 10, 64)
+		snoCondition = fmt.Sprintf(`AND t1.SNO = %d`, parseInt)
+	}
+
 	query := fmt.Sprintf(`
 				SELECT *
 				FROM (
@@ -440,12 +446,12 @@ func (r *Repository) GetUsedProjectList(ctx context.Context, db Queryer, pageSql
 							INNER JOIN TIMESHEET.SYS_CODE_SET t5 ON t5.MINOR_CD = t2.job_state AND t5.major_cd = 'JOB_STATE'
 						WHERE t1.SNO > 100
 						AND t1.IS_USE = 'Y'
-						%s %s %s
+						%s %s %s %s
 						ORDER BY %s
 					) sorted_data
 					WHERE ROWNUM <= :1
 				)
-				WHERE RNUM > :2`, jnoCondition, condition, retryCondition, order)
+				WHERE RNUM > :2`, jnoCondition, snoCondition, condition, retryCondition, order)
 
 	if err := db.SelectContext(ctx, &list, query, pageSql.EndNum, pageSql.StartNum); err != nil {
 		return nil, utils.CustomErrorf(err)
@@ -457,7 +463,7 @@ func (r *Repository) GetUsedProjectList(ctx context.Context, db Queryer, pageSql
 // func: 공사관리시스템 등록 프로젝트 전체 조회 개수
 // @param
 // -
-func (r *Repository) GetUsedProjectCount(ctx context.Context, db Queryer, search entity.JobInfo, retry string, includeJno string) (int, error) {
+func (r *Repository) GetUsedProjectCount(ctx context.Context, db Queryer, search entity.JobInfo, retry string, includeJno string, snoString string) (int, error) {
 	var count int
 
 	condition := ""
@@ -487,6 +493,12 @@ func (r *Repository) GetUsedProjectCount(ctx context.Context, db Queryer, search
 			)`, parseInt)
 	}
 
+	var snoCondition string
+	if snoString != "undefined" && snoString != "" {
+		parseInt, _ := strconv.ParseInt(snoString, 10, 64)
+		snoCondition = fmt.Sprintf(`AND t1.SNO = %d`, parseInt)
+	}
+
 	query := fmt.Sprintf(`
 				SELECT 
 					COUNT(*)
@@ -498,7 +510,7 @@ func (r *Repository) GetUsedProjectCount(ctx context.Context, db Queryer, search
 					INNER JOIN TIMESHEET.SYS_CODE_SET t5 ON t5.MINOR_CD = t2.job_state AND t5.major_cd = 'JOB_STATE'
 				WHERE t1.SNO > 100
 				AND t1.IS_USE = 'Y'
-				%s %s %s`, jnoCondition, condition, retryCondition)
+				%s %s %s %s`, jnoCondition, snoCondition, condition, retryCondition)
 
 	if err := db.GetContext(ctx, &count, query); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -1140,14 +1152,20 @@ func (r *Repository) RemoveProject(ctx context.Context, tx Execer, sno int64, jn
 func (r *Repository) ModifyProjectIsNonUse(ctx context.Context, tx Execer, site entity.ReqSite) error {
 	agent := utils.GetAgent()
 
-	query := `
+	var jnoCondition string
+	if site.Jno.Valid {
+		jnoCondition = fmt.Sprintf(`AND JNO = %d`, site.Jno.Int64)
+	}
+
+	query := fmt.Sprintf(`
 			UPDATE IRIS_SITE_JOB
 			SET IS_USE = 'N',
 			MOD_AGENT = :1,
 		    MOD_USER = :2,
 		    MOD_UNO = :3,
 		    MOD_DATE = SYSDATE
-			WHERE SNO = :4`
+			WHERE SNO = :4
+			%s`, jnoCondition)
 	if _, err := tx.ExecContext(ctx, query, agent, site.ModUser, site.ModUno, site.Sno); err != nil {
 		return utils.CustomErrorf(err)
 	}
@@ -1161,14 +1179,20 @@ func (r *Repository) ModifyProjectIsNonUse(ctx context.Context, tx Execer, site 
 func (r *Repository) ModifyProjectIsUse(ctx context.Context, tx Execer, site entity.ReqSite) error {
 	agent := utils.GetAgent()
 
-	query := `
+	var jnoCondition string
+	if site.Jno.Valid {
+		jnoCondition = fmt.Sprintf(`AND JNO = %d`, site.Jno.Int64)
+	}
+
+	query := fmt.Sprintf(`
 			UPDATE IRIS_SITE_JOB
 			SET IS_USE = 'Y',
 			MOD_AGENT = :1,
 		    MOD_USER = :2,
 		    MOD_UNO = :3,
 		    MOD_DATE = SYSDATE
-			WHERE SNO = :4`
+			WHERE SNO = :4
+			%s`, jnoCondition)
 	if _, err := tx.ExecContext(ctx, query, agent, site.ModUser, site.ModUno, site.Sno); err != nil {
 		return utils.CustomErrorf(err)
 	}

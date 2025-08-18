@@ -36,6 +36,7 @@ type ErrResponse struct {
 	Result         ResultRole     `json:"result"`
 	Message        string         `json:"message"`
 	Details        ErrDetailsRole `json:"details"`
+	Error          string         `json:"error"`
 	HttpStatusCode int            `json:"http-status-code"`
 }
 
@@ -78,6 +79,22 @@ func FailResponse(ctx context.Context, w http.ResponseWriter, err error) {
 		&ErrResponse{
 			Result:         Failure,
 			Message:        err.Error(),
+			HttpStatusCode: http.StatusInternalServerError,
+		},
+		http.StatusOK)
+}
+
+func FailResponseMessage(ctx context.Context, w http.ResponseWriter, err error, message string) {
+	//에러 로그 기록
+	_ = entity.WriteErrorLog(ctx, err)
+
+	RespondJSON(
+		ctx,
+		w,
+		&ErrResponse{
+			Result:         Failure,
+			Error:          err.Error(),
+			Message:        message,
 			HttpStatusCode: http.StatusInternalServerError,
 		},
 		http.StatusOK)

@@ -401,6 +401,42 @@ func (s *ServiceSite) ModifySiteIsUse(ctx context.Context, site entity.ReqSite) 
 	return
 }
 
+// func: 현장 프로젝트 사용안함 변경
+// @param
+// -
+func (s *ServiceSite) ModifySiteJobNonUse(ctx context.Context, site entity.ReqSite) (err error) {
+	tx, err := txutil.BeginTxWithMode(ctx, s.SafeTDB, false)
+	if err != nil {
+		return utils.CustomErrorf(err)
+	}
+
+	defer txutil.DeferTx(tx, &err)
+
+	// 프로젝트
+	if err = s.ProjectStore.ModifyProjectIsNonUse(ctx, tx, site); err != nil {
+		return utils.CustomErrorf(err)
+	}
+	return
+}
+
+// func: 현장 프로젝트 사용안함 변경
+// @param
+// -
+func (s *ServiceSite) ModifySiteJobUse(ctx context.Context, site entity.ReqSite) (err error) {
+	tx, err := txutil.BeginTxWithMode(ctx, s.SafeTDB, false)
+	if err != nil {
+		return utils.CustomErrorf(err)
+	}
+
+	defer txutil.DeferTx(tx, &err)
+
+	// 프로젝트
+	if err = s.ProjectStore.ModifyProjectIsUse(ctx, tx, site); err != nil {
+		return utils.CustomErrorf(err)
+	}
+	return
+}
+
 // func: 공정률 전날 수치로 세팅
 // @param
 // -

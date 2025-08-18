@@ -109,6 +109,7 @@ func (h *HandlerProject) RegList(w http.ResponseWriter, r *http.Request) {
 	jobEd := r.URL.Query().Get("job_ed")
 	cdNm := r.URL.Query().Get("cd_nm")
 	includeJno := r.URL.Query().Get("include_jno")
+	snoString := r.URL.Query().Get("sno")
 	if pageNum == "" || rowSize == "" {
 		BadRequestResponse(ctx, w)
 		return
@@ -126,14 +127,14 @@ func (h *HandlerProject) RegList(w http.ResponseWriter, r *http.Request) {
 	search.CdNm = utils.ParseNullString(cdNm)
 
 	// 프로젝트 조회
-	list, err := h.Service.GetUsedProjectList(ctx, page, search, retry_search, includeJno)
+	list, err := h.Service.GetUsedProjectList(ctx, page, search, retry_search, includeJno, snoString)
 	if err != nil {
 		FailResponse(ctx, w, err)
 		return
 	}
 
 	// 개수
-	count, err := h.Service.GetUsedProjectCount(ctx, search, retry_search, includeJno)
+	count, err := h.Service.GetUsedProjectCount(ctx, search, retry_search, includeJno, snoString)
 	if err != nil {
 		FailResponse(ctx, w, err)
 		return

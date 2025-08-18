@@ -58,6 +58,8 @@ func SiteRoute(safeDB *sqlx.DB, timeSheetDB *sqlx.DB, r *store.Repository, apiCo
 	router.Put("/", siteHandler.Modify)                                    // 수정
 	router.Put("/non-use", siteHandler.ModifyNonUse)                       // 현장 사용안함
 	router.Put("/use", siteHandler.ModifyUse)                              // 현장 사용
+	router.Put("/non-use/job", siteHandler.ModifySiteJobNonUse)            // 현장 프로젝트 사용안함
+	router.Put("/use/job", siteHandler.ModifySiteJobUse)                   // 현장 프로젝트 사용
 	router.Put("/work-rate", siteHandler.ModifyWorkRate)                   // 공정률 수정
 	router.Get("/work-rate", siteHandler.SiteWorkRateByDate)               // 날짜별 현장 공정률
 	router.Get("/work-rate/{jno}/{date}", siteHandler.SiteWorkRateByMonth) // 월별 공정률
