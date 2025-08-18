@@ -43,8 +43,8 @@ func (g *UserValid) GetUserValid(ctx context.Context, userId string, userPwd str
 		if user.RoleCode == "" {
 			if user.DeptName == "기술연구소" {
 				user.RoleCode = string(auth.SystemAdmin)
-			} else if user.TeamName == "프로젝트관리팀" {
-				user.RoleCode = string(auth.SuperAdmin)
+				//} else if user.TeamName == "프로젝트관리팀" {
+				//	user.RoleCode = string(auth.SuperAdmin)
 			} else {
 				user.RoleCode = string(auth.User)
 			}
