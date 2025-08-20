@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/guregu/null"
+	"github.com/jmoiron/sqlx"
 )
 
 /**
@@ -1363,6 +1364,7 @@ func (r *Repository) GetDailyWorkerBeforeList(ctx context.Context, db Queryer, w
 			}
 		}
 		dailyWorker.ReasonType = w.ReasonType
+		dailyWorker.Reason = w.Reason
 		list = append(list, &dailyWorker)
 	}
 	return list, nil
@@ -1399,7 +1401,7 @@ func (r *Repository) AddHistoryDailyWorkers(ctx context.Context, tx Execer, work
 }
 
 // 변경 이력 조회
-func (r *Repository) GetHistoryDailyWorkers(ctx context.Context, db Queryer, startDate string, endDate string, sno int64, retry string) (entity.WorkerDailys, error) {
+func (r *Repository) GetHistoryDailyWorkers(ctx context.Context, db Queryer, startDate string, endDate string, sno int64, retry string, userKeys []string) (entity.WorkerDailys, error) {
 	var list entity.WorkerDailys
 
 	var columns []string
@@ -1413,6 +1415,7 @@ func (r *Repository) GetHistoryDailyWorkers(ctx context.Context, db Queryer, sta
 			HIS_STATUS,
 			HIS_NAME,
 			REASON_TYPE,
+			REASON,
 			REG_DATE,
 			USER_ID,
 			USER_NM,
@@ -1443,6 +1446,7 @@ func (r *Repository) GetHistoryDailyWorkers(ctx context.Context, db Queryer, sta
 						'09', '엑셀업로드',  
 						''
 				) AS REASON_TYPE,
+				T1.REASON,
 				T1.REG_DATE,
 				T2.USER_ID,
 				T2.USER_NM,
@@ -1471,10 +1475,11 @@ func (r *Repository) GetHistoryDailyWorkers(ctx context.Context, db Queryer, sta
 			LEFT JOIN IRIS_WORKER_SET T2 ON T1.SNO = T2.SNO AND T1.USER_KEY = T2.USER_KEY
 			LEFT JOIN S_JOB_INFO T3 ON T1.JNO = T3.JNO
 			WHERE 1=1
+			 AND ( ? = 1 OR T1.USER_KEY IN (?))
 			%s
 		)
-		WHERE TO_CHAR(FIXED_RECORD_DATE, 'YYYY-MM-DD') BETWEEN :1 AND :2
-		  AND FIXED_SNO = :3
+		WHERE TO_CHAR(FIXED_RECORD_DATE, 'YYYY-MM-DD') BETWEEN ? AND ?
+		  AND FIXED_SNO = ?
 		ORDER BY
 			REG_DATE DESC,
 			USER_ID,
@@ -1483,7 +1488,20 @@ func (r *Repository) GetHistoryDailyWorkers(ctx context.Context, db Queryer, sta
 			HIS_STATUS DESC
 		`, retryCondition)
 
-	if err := db.SelectContext(ctx, &list, query, startDate, endDate, sno); err != nil {
+	var args []any
+	var err error
+	if len(userKeys) > 0 { // userKeys가 있는 경우 userKeys에 해당하는 이력만 조회
+		query, args, err = sqlx.In(query, 0, userKeys, startDate, endDate, sno)
+	} else { // userKeys가 없는 경우 모든 이력 조회
+		query, args, err = sqlx.In(query, 1, []string{"dummy"}, startDate, endDate, sno)
+	}
+
+	if err != nil {
+		return nil, utils.CustomErrorf(err)
+	}
+	query = db.Rebind(query)
+
+	if err = db.SelectContext(ctx, &list, query, args...); err != nil {
 		return list, utils.CustomErrorf(err)
 	}
 	return list, nil

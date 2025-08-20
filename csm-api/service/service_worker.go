@@ -646,8 +646,8 @@ func (s *ServiceWorker) MergeRecdDailyWorker(ctx context.Context) (err error) {
 }
 
 // 변경 이력 조회
-func (s *ServiceWorker) GetHistoryDailyWorkers(ctx context.Context, startDate string, endDate string, sno int64, retry string) (entity.WorkerDailys, error) {
-	list, err := s.Store.GetHistoryDailyWorkers(ctx, s.SafeDB, startDate, endDate, sno, retry)
+func (s *ServiceWorker) GetHistoryDailyWorkers(ctx context.Context, startDate string, endDate string, sno int64, retry string, userKeys []string) (entity.WorkerDailys, error) {
+	list, err := s.Store.GetHistoryDailyWorkers(ctx, s.SafeDB, startDate, endDate, sno, retry, userKeys)
 	if err != nil {
 		return entity.WorkerDailys{}, utils.CustomErrorf(err)
 	}
