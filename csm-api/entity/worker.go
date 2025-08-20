@@ -26,6 +26,7 @@ type Worker struct {
 	RetireDate  null.Time   `json:"retire_date" db:"RETIRE_DATE"`
 	RecordDate  null.String `json:"record_date" db:"RECORD_DATE"`
 	RegNo       null.String `json:"reg_no" db:"REG_NO"`
+	FailReason  null.String `json:"fail_reason" db:"FAIL_REASON"`
 	WorkerReason
 	Base
 }

@@ -336,7 +336,7 @@ func (r *Repository) AddWorker(ctx context.Context, tx Execer, worker entity.Wor
 		)
 		SELECT
 			:1, :2, :3, :4, :5,
-			:6, :7, :8, :9, SYSDATE,
+			:6, REPLACE(:7, '-', ''), :8, :9, SYSDATE,
 			:10, :11, :12, :13, GET_IRIS_USER_UUID()
 		FROM DUAL
 		WHERE NOT EXISTS (
@@ -378,7 +378,7 @@ func (r *Repository) ModifyWorker(ctx context.Context, tx Execer, worker entity.
 				SET 
 					R.USER_NM          = :1,
 					R.DEPARTMENT       = :2,
-					R.PHONE            = :3,
+					R.PHONE            = REPLACE(:3, '-', ''),
 					R.WORKER_TYPE      = :4,
 					R.IS_RETIRE        = :5,
 					R.RETIRE_DATE      = :6,
@@ -413,7 +413,8 @@ func (r *Repository) ModifyWorker(ctx context.Context, tx Execer, worker entity.
 		return utils.CustomErrorf(err)
 	}
 	if rowsAffected == 0 {
-		return utils.CustomErrorf(fmt.Errorf("Rows add/update cnt: %d\n", rowsAffected))
+		// 변한게 없는 경우 에러발생
+		//return utils.CustomErrorf(fmt.Errorf("Rows add/update cnt: %d\n", rowsAffected))
 	}
 
 	return nil
@@ -424,32 +425,44 @@ func (r *Repository) MergeWorker(ctx context.Context, tx Execer, worker entity.W
 	agent := utils.GetAgent()
 
 	query := `
+
 		MERGE INTO IRIS_WORKER_SET W1
 		USING (
-			SELECT
-				:1 AS SNO, -- 현장번호 
-				:2 AS JNO, -- 프로젝트번호
-				:3 AS USER_NM, -- 이름
-				:4 AS REG_NO, -- 주민번호
-				:5 AS USER_ID, -- 아이디
-				:6 AS DEPARTMENT, -- 부서 / 조직명
-				:7 AS PHONE, -- 핸드폰번호
-				:8 AS DISC_NAME, -- 공종
-				:9 AS IS_RETIRE, -- 퇴직여부
-				(SELECT CODE FROM IRIS_CODE_SET WHERE P_CODE = 'WORKER_TYPE' AND CODE_NM = :10) AS WORKER_TYPE, -- 근로자구분
-				:11 AS USER_KEY, -- 유저키
-				:12 AS UNO, -- 등록자 UNO
-				:13 AS NAME, -- 등록자 NAME
-				:14 AS AGENT -- 등록자 AGENT
-			FROM DUAL
+			WITH worker AS (
+				SELECT
+					:1 AS SNO, -- 현장번호 
+					:2 AS JNO, -- 프로젝트번호
+					:3 AS USER_NM, -- 이름
+					:4 AS REG_NO, -- 주민번호
+					:5 AS USER_ID, -- 아이디
+					:6 AS DEPARTMENT, -- 부서 / 조직명
+					:7 AS PHONE, -- 핸드폰번호
+					:8 AS DISC_NAME, -- 공종
+					:9 AS IS_RETIRE, -- 퇴직여부
+					(SELECT CODE FROM IRIS_CODE_SET WHERE P_CODE = 'WORKER_TYPE' AND CODE_NM = :10) AS WORKER_TYPE, -- 근로자구분
+					:11 AS UNO, -- 등록자 UNO
+					:12 AS NAME, -- 등록자 NAME
+					:13 AS AGENT -- 등록자 AGENT
+				FROM DUAL
+			)
+			SELECT 
+				w.*,
+				NVL(ws.USER_KEY, GET_IRIS_USER_UUID()) AS USER_KEY 
+			FROM 
+				worker w 
+			LEFT JOIN 
+				IRIS_WORKER_SET ws
+			ON
+				w.USER_ID = ws.USER_ID 
+				AND ws.USER_ID = w.USER_ID
+				AND ws.USER_NM = w.USER_NM
+				AND (
+					(ws.REG_NO = w.REG_NO) OR (ws.REG_NO IS NULL AND ws.REG_NO IS NULL)
+				)
+				AND ws.IS_DEL = 'N'
 		) W2
 		ON (
-			W1.USER_ID = W2.USER_ID
-			AND W1.USER_NM = W2.USER_NM
-			AND (
-				(W1.REG_NO = W2.REG_NO) OR (W1.REG_NO IS NULL AND W2.REG_NO IS NULL)
-			)
-			AND W1.IS_DEL = 'N'
+			W1.USER_KEY = W2.USER_KEY
 		) WHEN MATCHED THEN 
 			UPDATE SET 
 				W1.SNO = W2.SNO, 
@@ -472,13 +485,13 @@ func (r *Repository) MergeWorker(ctx context.Context, tx Execer, worker entity.W
 			VALUES (
 				W2.SNO, W2.JNO, W2.USER_ID, W2.USER_NM, W2.DEPARTMENT,
 				W2.DISC_NAME, W2.PHONE, W2.WORKER_TYPE, W2.IS_RETIRE, 'N',
-				SYSDATE, W2.AGENT, W2.NAME, W2.UNO, W2.REG_NO, GET_IRIS_USER_UUID()
+				SYSDATE, W2.AGENT, W2.NAME, W2.UNO, W2.REG_NO, W2.USER_KEY
 			)
 		`
 	res, err := tx.ExecContext(ctx, query,
 		worker.Sno, worker.Jno, worker.UserNm, worker.RegNo,
 		worker.UserId, worker.Department, worker.Phone, worker.DiscName,
-		worker.IsRetire, worker.CodeNm, worker.UserKey, worker.RegUno, worker.RegUser, agent,
+		worker.IsRetire, worker.CodeNm, worker.RegUno, worker.RegUser, agent,
 	)
 	if err != nil {
 		return 0, utils.CustomErrorf(err)
