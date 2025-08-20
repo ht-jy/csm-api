@@ -230,25 +230,21 @@ func (r *Repository) ModifySite(ctx context.Context, tx Execer, site entity.Site
 // @param
 // -
 func (r *Repository) AddSite(ctx context.Context, db Queryer, tx Execer, jno int64, user entity.User) error {
-	var generatedSNO int64
 
-	// sno 생성
-	query := `SELECT SEQ_IRIS_SITE_SET.NEXTVAL FROM DUAL`
-	if err := db.GetContext(ctx, &generatedSNO, query); err != nil {
-		return utils.CustomErrorf(err)
-	}
 	// IRIS_SITE_SET 생성
-	query = `
+	query := `
 			INSERT INTO IRIS_SITE_SET(
-				SNO, SITE_NM, LOC_CODE, LOC_NAME, IS_USE, 
+				SNO, 
+			  	SITE_NM, LOC_CODE, LOC_NAME, IS_USE, 
 			    REG_DATE, REG_AGENT, REG_USER, REG_UNO
 			) 
 			SELECT 
-				:1, JOB_NAME, JOB_LOC, JOB_LOC_NAME, 'Y', 
-				SYSDATE, :2, :3, :4
+				SEQ_IRIS_SITE_SET.NEXTVAL,
+				JOB_NAME, JOB_LOC, JOB_LOC_NAME, 'Y', 
+				SYSDATE, :1, :2, :3
 			FROM s_job_info 
-			WHERE JNO = :5`
-	if _, err := tx.ExecContext(ctx, query, generatedSNO, user.Agent, user.UserName, user.Uno, jno); err != nil {
+			WHERE JNO = :4`
+	if _, err := tx.ExecContext(ctx, query, user.Agent, user.UserName, user.Uno, jno); err != nil {
 		return utils.CustomErrorf(err)
 	}
 
@@ -258,25 +254,28 @@ func (r *Repository) AddSite(ctx context.Context, db Queryer, tx Execer, jno int
 				SNO, JNO, IS_USE, IS_DEFAULT, REG_DATE,
 				REG_AGENT, REG_USER, REG_UNO
 			) VALUES (
-				:1, :2, 'Y', 'Y', SYSDATE,
+				(SELECT SNO FROM IRIS_SITE_SET S INNER JOIN (SELECT * FROM S_JOB_INFO WHERE JNO = :1) J ON S.SITE_NM = J.JOB_NAME),
+			    :2, 'Y', 'Y', SYSDATE,
 				:3, :4, :5
 			)`
-	if _, err := tx.ExecContext(ctx, query, generatedSNO, jno, user.Agent, user.UserName, user.Uno); err != nil {
+	if _, err := tx.ExecContext(ctx, query, jno, jno, user.Agent, user.UserName, user.Uno); err != nil {
 		return utils.CustomErrorf(err)
 	}
 
 	// IRIS_SITE_DATE 생성
 	query = `
 			INSERT INTO IRIS_SITE_DATE(
-				SNO, OPENING_DATE, CLOSING_PLAN_DATE, IS_USE, REG_DATE,
+				SNO
+				, OPENING_DATE, CLOSING_PLAN_DATE, IS_USE, REG_DATE,
 				REG_AGENT, REG_USER, REG_UNO
 			)
 			SELECT
-				:1,	TO_DATE(JOB_SD, 'YYYY-MM-DD'), TO_DATE(JOB_ED, 'YYYY-MM-DD'), 'Y', SYSDATE,
+				(SELECT SNO FROM IRIS_SITE_SET S INNER JOIN (SELECT * FROM S_JOB_INFO WHERE JNO = :1) J ON S.SITE_NM = J.JOB_NAME)
+				,TO_DATE(JOB_SD, 'YYYY-MM-DD'), TO_DATE(JOB_ED, 'YYYY-MM-DD'), 'Y', SYSDATE,
 				:2, :3, :4
 			FROM s_job_info
 			WHERE JNO = :5`
-	if _, err := tx.ExecContext(ctx, query, generatedSNO, user.Agent, user.UserName, user.Uno, jno); err != nil {
+	if _, err := tx.ExecContext(ctx, query, jno, user.Agent, user.UserName, user.Uno, jno); err != nil {
 		return utils.CustomErrorf(err)
 	}
 
