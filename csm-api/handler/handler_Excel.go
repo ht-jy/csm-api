@@ -157,6 +157,7 @@ func (h *HandlerExcel) ImportExcel(w http.ResponseWriter, r *http.Request) {
 	} else if fileType == "DEDUCTION" {
 		deduction := entity.Deduction{
 			Sno:        utils.ParseNullInt(snoString),
+			Jno:        utils.ParseNullInt(jnoString),
 			RecordDate: utils.ParseNullDate(workDate),
 			Base: entity.Base{
 				RegUser: utils.ParseNullString(regUser),

@@ -128,7 +128,7 @@ func (s *ServiceExcel) ImportDeduction(ctx context.Context, path string, deducti
 	}
 	file.UploadRound = utils.ParseNullInt(strconv.Itoa(uploadRound))
 
-	siteNm, err := s.Store.GetDeductionSiteNameBySno(ctx, s.SafeDB, deduction.Sno.Int64)
+	siteNm, err := s.Store.GetDeductionJobNameByJno(ctx, s.SafeDB, deduction.Jno.Int64)
 	if err != nil {
 		return utils.CustomErrorf(err)
 	}
@@ -159,7 +159,7 @@ func (s *ServiceExcel) ImportDeduction(ctx context.Context, path string, deducti
 		userNm := mustGet(f, sheetName, fmt.Sprintf("G%d", rowIdx))
 		// F열(회사명)
 		department := mustGet(f, sheetName, fmt.Sprintf("F%d", rowIdx))
-		// I열(성별)
+		// N열(성별)
 		gender := mustGet(f, sheetName, fmt.Sprintf("N%d", rowIdx))
 		// H열(생년월일)
 		regNo := mustGet(f, sheetName, fmt.Sprintf("H%d", rowIdx))
@@ -176,6 +176,7 @@ func (s *ServiceExcel) ImportDeduction(ctx context.Context, path string, deducti
 
 		newDeduction := entity.Deduction{
 			Sno:          deduction.Sno,
+			Jno:          deduction.Jno,
 			UserNm:       utils.ParseNullString(userNm),
 			Department:   utils.ParseNullString(department),
 			Gender:       utils.ParseNullString(gender),

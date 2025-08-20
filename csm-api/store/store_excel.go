@@ -52,12 +52,12 @@ func (r *Repository) AddTbmExcel(ctx context.Context, tx Execer, tbms []entity.T
 }
 
 // 퇴직공제 현장명 조회
-func (r *Repository) GetDeductionSiteNameBySno(ctx context.Context, db Queryer, sno int64) (string, error) {
+func (r *Repository) GetDeductionJobNameByJno(ctx context.Context, db Queryer, jno int64) (string, error) {
 	var name sql.NullString
 
-	query := `SELECT SITE_NM FROM IRIS_SITE_SET WHERE SNO = :1`
+	query := `SELECT JOB_NAME FROM S_JOB_INFO WHERE JNO = :1`
 
-	if err := db.GetContext(ctx, &name, query, sno); err != nil {
+	if err := db.GetContext(ctx, &name, query, jno); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return "", nil
 		}
@@ -97,11 +97,11 @@ func (r *Repository) AddDeductionExcel(ctx context.Context, tx Execer, tbms []en
 	agent := utils.GetAgent()
 
 	query := `
-		INSERT INTO IRIS_DEDUCTION_SET(SNO, USER_NM, DEPARTMENT, GENDER, REG_NO, PHONE, IN_RECOG_TIME, OUT_RECOG_TIME, RECORD_DATE, DEDUCT_ORDER, REG_DATE, REG_USER, REG_UNO, REG_AGENT)
-		VALUES(:1, :2, :3, :4, :5, :6, :7, :8, :9, :10, SYSDATE, :11, :12, :13)`
+		INSERT INTO IRIS_DEDUCTION_SET(SNO, JNO, USER_NM, DEPARTMENT, GENDER, REG_NO, PHONE, IN_RECOG_TIME, OUT_RECOG_TIME, RECORD_DATE, DEDUCT_ORDER, REG_DATE, REG_USER, REG_UNO, REG_AGENT)
+		VALUES(:1, :2, :3, :4, :5, :6, :7, :8, :9, :10, :11, SYSDATE, :12, :13, :14)`
 
 	for _, tbm := range tbms {
-		if _, err := tx.ExecContext(ctx, query, tbm.Sno, tbm.UserNm, tbm.Department, tbm.Gender, tbm.RegNo, tbm.Phone, tbm.InRecogTime, tbm.OutRecogTime, tbm.RecordDate, tbm.DeductOrder, tbm.RegUser, tbm.RegUno, agent); err != nil {
+		if _, err := tx.ExecContext(ctx, query, tbm.Sno, tbm.Jno, tbm.UserNm, tbm.Department, tbm.Gender, tbm.RegNo, tbm.Phone, tbm.InRecogTime, tbm.OutRecogTime, tbm.RecordDate, tbm.DeductOrder, tbm.RegUser, tbm.RegUno, agent); err != nil {
 			return utils.CustomErrorf(err)
 		}
 	}

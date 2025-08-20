@@ -70,12 +70,13 @@ func (r *Repository) GetSiteList(ctx context.Context, db Queryer, targetDate tim
 				FROM IRIS_SITE_SET t1
 				INNER JOIN IRIS_SITE_JOB t2 ON t1.SNO = t2.SNO AND t2.IS_DEFAULT = 'Y'
 				INNER JOIN S_JOB_INFO t3 ON t2.JNO = t3.JNO AND t3.JNO IN (SELECT * FROM USER_IN_JNO)
-				INNER JOIN (SELECT * FROM IRIS_SITE_DATE WHERE (:6 BETWEEN OPENING_DATE AND CLOSING_ACTUAL_DATE) OR (:7 >= OPENING_DATE AND CLOSING_ACTUAL_DATE IS NULL) OR (:8 <= CLOSING_ACTUAL_DATE AND OPENING_DATE IS NULL)) t4 ON t1.SNO = t4.SNO
+				INNER JOIN IRIS_SITE_DATE t4 ON t1.SNO = t4.SNO AND :6 >= t4.OPENING_DATE 
+				-- (:6 BETWEEN OPENING_DATE AND CLOSING_ACTUAL_DATE) OR (:7 >= OPENING_DATE AND CLOSING_ACTUAL_DATE IS NULL) OR (:8 <= CLOSING_ACTUAL_DATE AND OPENING_DATE IS NULL)
 				WHERE t1.SNO > -1
 				--AND t1.IS_USE = 'Y'
 				ORDER BY t1.REG_DATE ASC,t1.SNO DESC`
 
-	if err := db.SelectContext(ctx, &sites, sql, role, uno, uno, targetDate, targetDate, targetDate, targetDate, targetDate); err != nil {
+	if err := db.SelectContext(ctx, &sites, sql, role, uno, uno, targetDate, targetDate, targetDate); err != nil {
 		return &sites, utils.CustomErrorf(err)
 	}
 

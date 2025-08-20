@@ -977,6 +977,7 @@ func (r *Repository) GetNonUsedProjectListByType(ctx context.Context, db Queryer
 										AND t1.JNO NOT IN(
 											SELECT JNO
 											FROM IRIS_SITE_JOB
+											WHERE IS_USE = 'Y'
 										) AND REGEXP_LIKE(job_no, '^[^-]+-[^ -]*[%s][^ -]*-[^-]+-[^-]+$')
 										%s %s
 										ORDER BY %s 

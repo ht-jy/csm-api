@@ -225,7 +225,7 @@ type CompareStore interface {
 type ExcelStore interface {
 	GetTbmOrder(ctx context.Context, db Queryer, tbm entity.Tbm) (string, error)
 	AddTbmExcel(ctx context.Context, tx Execer, tbm []entity.Tbm) error
-	GetDeductionSiteNameBySno(ctx context.Context, db Queryer, sno int64) (string, error)
+	GetDeductionJobNameByJno(ctx context.Context, db Queryer, jno int64) (string, error)
 	GetDeductionOrder(ctx context.Context, db Queryer, tbm entity.Deduction) (string, error)
 	AddDeductionExcel(ctx context.Context, tx Execer, tbm []entity.Deduction) error
 }

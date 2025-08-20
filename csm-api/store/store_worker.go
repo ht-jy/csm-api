@@ -1417,7 +1417,7 @@ func (r *Repository) GetHistoryDailyWorkers(ctx context.Context, db Queryer, sta
 		FROM (
 			SELECT
 				T1.HIS_STATUS,
-				DECODE(T1.HIS_STATUS, 'AFTER', '변경 후', 'BEFORE', '변경 전', '') AS HIS_NAME,
+				DECODE(T1.HIS_STATUS, 'AFTER', '후', 'BEFORE', '전', '') AS HIS_NAME,
 				DECODE(T1.REASON_TYPE, 
 						'01', '추가', 
 						'02', '수정', 
