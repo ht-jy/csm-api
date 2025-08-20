@@ -172,7 +172,7 @@ type WorkerStore interface {
 	MergeRecdDailyWorker(ctx context.Context, tx Execer, worker []entity.WorkerDaily) error
 	GetDailyWorkerBeforeList(ctx context.Context, db Queryer, workers entity.WorkerDailys) (entity.WorkerDailys, error)
 	AddHistoryDailyWorkers(ctx context.Context, tx Execer, workers entity.WorkerDailys) error
-	GetHistoryDailyWorkers(ctx context.Context, db Queryer, startDate string, endDate string, sno int64, retry string) (entity.WorkerDailys, error)
+	GetHistoryDailyWorkers(ctx context.Context, db Queryer, startDate string, endDate string, sno int64, retry string, userKeys []string) (entity.WorkerDailys, error)
 	GetHistoryDailyWorkerReason(ctx context.Context, db Queryer, cno int64) (string, error)
 }
 
@@ -225,7 +225,7 @@ type CompareStore interface {
 type ExcelStore interface {
 	GetTbmOrder(ctx context.Context, db Queryer, tbm entity.Tbm) (string, error)
 	AddTbmExcel(ctx context.Context, tx Execer, tbm []entity.Tbm) error
-	GetDeductionSiteNameBySno(ctx context.Context, db Queryer, sno int64) (string, error)
+	GetDeductionJobNameByJno(ctx context.Context, db Queryer, jno int64) (string, error)
 	GetDeductionOrder(ctx context.Context, db Queryer, tbm entity.Deduction) (string, error)
 	AddDeductionExcel(ctx context.Context, tx Execer, tbm []entity.Deduction) error
 }

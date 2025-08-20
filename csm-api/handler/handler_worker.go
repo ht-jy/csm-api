@@ -434,9 +434,11 @@ func (h *HandlerWorker) GetDailyWorkerHistory(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	userKeys := r.URL.Query()["keys"]
+
 	sno, _ := strconv.ParseInt(snoString, 10, 64)
 
-	list, err := h.Service.GetHistoryDailyWorkers(ctx, startDate, endDate, sno, retrySearch)
+	list, err := h.Service.GetHistoryDailyWorkers(ctx, startDate, endDate, sno, retrySearch, userKeys)
 	if err != nil {
 		FailResponse(ctx, w, err)
 		return

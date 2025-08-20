@@ -142,7 +142,7 @@ type WorkerService interface {
 	ModifyWorkHours(ctx context.Context, workers entity.WorkerDailys) error
 	MergeRecdWorker(ctx context.Context) error
 	MergeRecdDailyWorker(ctx context.Context) error
-	GetHistoryDailyWorkers(ctx context.Context, startDate string, endDate string, sno int64, retry string) (entity.WorkerDailys, error)
+	GetHistoryDailyWorkers(ctx context.Context, startDate string, endDate string, sno int64, retry string, userKeys []string) (entity.WorkerDailys, error)
 	GetHistoryDailyWorkerReason(ctx context.Context, cno int64) (string, error)
 }
 

@@ -128,7 +128,7 @@ func (s *ServiceExcel) ImportDeduction(ctx context.Context, path string, deducti
 	}
 	file.UploadRound = utils.ParseNullInt(strconv.Itoa(uploadRound))
 
-	siteNm, err := s.Store.GetDeductionSiteNameBySno(ctx, s.SafeDB, deduction.Sno.Int64)
+	siteNm, err := s.Store.GetDeductionJobNameByJno(ctx, s.SafeDB, deduction.Jno.Int64)
 	if err != nil {
 		return utils.CustomErrorf(err)
 	}
@@ -159,7 +159,7 @@ func (s *ServiceExcel) ImportDeduction(ctx context.Context, path string, deducti
 		userNm := mustGet(f, sheetName, fmt.Sprintf("G%d", rowIdx))
 		// F열(회사명)
 		department := mustGet(f, sheetName, fmt.Sprintf("F%d", rowIdx))
-		// I열(성별)
+		// N열(성별)
 		gender := mustGet(f, sheetName, fmt.Sprintf("N%d", rowIdx))
 		// H열(생년월일)
 		regNo := mustGet(f, sheetName, fmt.Sprintf("H%d", rowIdx))
@@ -176,6 +176,7 @@ func (s *ServiceExcel) ImportDeduction(ctx context.Context, path string, deducti
 
 		newDeduction := entity.Deduction{
 			Sno:          deduction.Sno,
+			Jno:          deduction.Jno,
 			UserNm:       utils.ParseNullString(userNm),
 			Department:   utils.ParseNullString(department),
 			Gender:       utils.ParseNullString(gender),
@@ -366,10 +367,10 @@ func (s *ServiceExcel) ImportAddDailyWorker(ctx context.Context, path string, wo
 }
 
 // 전체근로자 업로드
-func (s *ServiceExcel) ImportAddWorker(ctx context.Context, path string, worker entity.Worker) (successList entity.Workers, err error) {
+func (s *ServiceExcel) ImportAddWorker(ctx context.Context, path string, worker entity.Worker) (list entity.Workers, err error) {
 	f, err := excelize.OpenFile(path)
 	if err != nil {
-		return successList, utils.CustomErrorf(err)
+		return list, utils.CustomErrorf(err)
 	}
 
 	sheet := f.GetSheetName(0)
@@ -377,6 +378,8 @@ func (s *ServiceExcel) ImportAddWorker(ctx context.Context, path string, worker 
 
 	row := 2
 	for {
+		var failReason string
+
 		// B: (이름) 기준으로 값이 없으면 종료
 		userNm, err := f.GetCellValue(sheet, fmt.Sprintf("B%d", row))
 		if err != nil || strings.TrimSpace(userNm) == "" {
@@ -385,9 +388,10 @@ func (s *ServiceExcel) ImportAddWorker(ctx context.Context, path string, worker 
 		// C: 주민등록번호
 		identityNumberRaw, _ := f.GetCellValue(sheet, fmt.Sprintf("C%d", row))
 		regNo := strings.ReplaceAll(identityNumberRaw, "-", "")
-		if len(regNo) == 8 {
-			regNo = regNo[2:] // 앞 2자리 제거
+		if len(regNo) != 13 {
+			failReason = "주민등록번호 13자리를 입력하지 않았습니다."
 		}
+
 		// D: 아이디
 		rawId, _ := f.GetCellValue(sheet, fmt.Sprintf("D%d", row))
 		normalizedId := strings.ReplaceAll(strings.ReplaceAll(rawId, "-", ""), " ", "")
@@ -430,6 +434,7 @@ func (s *ServiceExcel) ImportAddWorker(ctx context.Context, path string, worker 
 			DiscName:   utils.ParseNullString(discName),
 			IsRetire:   utils.ParseNullString(isRetire),
 			CodeNm:     utils.ParseNullString(codeNm),
+			FailReason: utils.ParseNullString(failReason),
 			Base: entity.Base{
 				RegUser: worker.RegUser,
 				RegUno:  worker.RegUno,
@@ -448,23 +453,26 @@ func (s *ServiceExcel) ImportAddWorker(ctx context.Context, path string, worker 
 
 	tx, err := txutil.BeginTxWithMode(ctx, s.SafeTDB, false)
 	if err != nil {
-		return successList, utils.CustomErrorf(err)
+		return list, utils.CustomErrorf(err)
 	}
 
 	defer txutil.DeferTx(tx, &err)
 
-	var count int64
-	var failList entity.Workers
 	// 업로드 데이터 추가/수정
+	var count int64
 	for _, excelWorker := range excels {
 
-		if count, err = s.WorkerStore.MergeWorker(ctx, tx, *excelWorker); err != nil {
-			return successList, utils.CustomErrorf(err)
-		} else if count != 0 {
-			successList = append(successList, excelWorker)
-		} else {
-			failList = append(failList, excelWorker)
+		if !excelWorker.FailReason.Valid {
+			count, err = s.WorkerStore.MergeWorker(ctx, tx, *excelWorker)
+			if err != nil {
+				return list, utils.CustomErrorf(err)
+			} else if count == 0 {
+				excelWorker.FailReason = utils.ParseNullString("근로자 추가에 실패하였습니다.")
+			}
 		}
+
+		list = append(list, excelWorker)
+
 	}
 
 	return
