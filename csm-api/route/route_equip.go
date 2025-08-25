@@ -19,8 +19,9 @@ func EquipRoute(safeDB *sqlx.DB, r *store.Repository) chi.Router {
 		},
 	}
 
-	router.Get("/", equipHandler.List)   // 장비 조회 (임시)
-	router.Post("/", equipHandler.Merge) // 장비 입력 (임시)
+	router.Get("/", equipHandler.List)       // 장비 조회
+	router.Get("/all", equipHandler.AllList) // 장비 전체 조회
+	router.Post("/", equipHandler.Merge)     // 장비 추가/수정
 
 	return router
 }

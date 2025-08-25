@@ -803,7 +803,7 @@ func (r *Repository) ModifyWorkerDefaultProject(ctx context.Context, tx Execer, 
 				MOD_UNO = :3,
 				MOD_AGENT = :4
 			WHERE SNO = :5
-			AND USER_ID = :6
+			AND USER_KEY = :6
 			AND EXISTS (
 				SELECT 1
 				FROM IRIS_SITE_JOB
@@ -811,7 +811,7 @@ func (r *Repository) ModifyWorkerDefaultProject(ctx context.Context, tx Execer, 
 			)`
 
 	for _, worker := range workers {
-		if _, err := tx.ExecContext(ctx, query, worker.AfterJno, worker.ModUser, worker.ModUno, agent, worker.Sno, worker.UserId, worker.Sno, worker.Jno); err != nil {
+		if _, err := tx.ExecContext(ctx, query, worker.AfterJno, worker.ModUser, worker.ModUno, agent, worker.Sno, worker.UserKey, worker.Sno, worker.Jno); err != nil {
 			return utils.CustomErrorf(err)
 		}
 	}

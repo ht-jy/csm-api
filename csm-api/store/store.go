@@ -193,8 +193,9 @@ type CompanyStore interface {
 }
 
 type EquipStore interface {
-	GetEquipList(ctx context.Context, db Queryer) (entity.EquipTemps, error)
-	MergeEquipCnt(ctx context.Context, tx Execer, equips entity.EquipTemps) error
+	GetEquipList(ctx context.Context, db Queryer, jno int64, sno int64) (entity.Equips, error)
+	GetEquip(ctx context.Context, db Queryer, jno int64, sno int64, recordDate time.Time) (entity.Equips, error)
+	MergeEquipCnt(ctx context.Context, tx Execer, equip entity.Equip) error
 }
 
 type ScheduleStore interface {

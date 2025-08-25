@@ -176,8 +176,9 @@ type RestDateApiService interface {
 }
 
 type EquipService interface {
-	GetEquipList(ctx context.Context) (entity.EquipTemps, error)
-	MergeEquipCnt(ctx context.Context, equips entity.EquipTemps) error
+	GetEquipList(ctx context.Context, jno int64, sno int64) (entity.Equips, error)
+	GetEquip(ctx context.Context, jno int64, sno int64, recordDate time.Time) (entity.Equips, error)
+	MergeEquipCnt(ctx context.Context, equips entity.Equip) error
 }
 
 type ScheduleService interface {

@@ -6,6 +6,7 @@ import (
 	"csm-api/store"
 	"csm-api/txutil"
 	"csm-api/utils"
+	"time"
 )
 
 type ServiceEquip struct {
@@ -14,15 +15,23 @@ type ServiceEquip struct {
 	Store   store.EquipStore
 }
 
-func (s *ServiceEquip) GetEquipList(ctx context.Context) (entity.EquipTemps, error) {
-	list, err := s.Store.GetEquipList(ctx, s.SafeDB)
+func (s *ServiceEquip) GetEquipList(ctx context.Context, jno int64, sno int64) (entity.Equips, error) {
+	list, err := s.Store.GetEquipList(ctx, s.SafeDB, jno, sno)
 	if err != nil {
-		return entity.EquipTemps{}, utils.CustomErrorf(err)
+		return entity.Equips{}, utils.CustomErrorf(err)
 	}
 	return list, nil
 }
+func (s *ServiceEquip) GetEquip(ctx context.Context, jno int64, sno int64, recordDate time.Time) (entity.Equips, error) {
 
-func (s *ServiceEquip) MergeEquipCnt(ctx context.Context, equips entity.EquipTemps) (err error) {
+	equips, err := s.Store.GetEquip(ctx, s.SafeDB, jno, sno, recordDate)
+	if err != nil {
+		return entity.Equips{}, utils.CustomErrorf(err)
+	}
+	return equips, nil
+}
+
+func (s *ServiceEquip) MergeEquipCnt(ctx context.Context, equip entity.Equip) (err error) {
 	tx, err := txutil.BeginTxWithMode(ctx, s.SafeTDB, false)
 	if err != nil {
 		return utils.CustomErrorf(err)
@@ -30,7 +39,7 @@ func (s *ServiceEquip) MergeEquipCnt(ctx context.Context, equips entity.EquipTem
 
 	defer txutil.DeferTx(tx, &err)
 
-	if err = s.Store.MergeEquipCnt(ctx, tx, equips); err != nil {
+	if err = s.Store.MergeEquipCnt(ctx, tx, equip); err != nil {
 		return utils.CustomErrorf(err)
 	}
 	return
