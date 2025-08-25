@@ -8,6 +8,7 @@ type Equip struct {
 	Cnt        null.Int    `json:"cnt" db:"CNT"`
 	JobName    null.String `json:"job_name" db:"JOB_NAME"`
 	RecordDate null.Time   `json:"record_date" db:"RECORD_DATE"`
+	Base
 }
 
 type Equips []*Equip
