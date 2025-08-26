@@ -121,7 +121,7 @@ func (r *Repository) GetProjectList(ctx context.Context, db Queryer, sno int64, 
 			SELECT
 				t1.SNO,
 				t1.JNO,
-				t1.IS_USE,
+				t1.STATUS,
 				t1.IS_DEFAULT,
 				t1.REG_DATE,
 				t1.REG_USER,
@@ -369,6 +369,7 @@ func (r *Repository) GetProjectNmList(ctx context.Context, db Queryer, role int,
 				INNER JOIN ( SELECT J.JNO, C.UDF_VAL_03 AS CANCEL_DAY FROM IRIS_JOB_SET J INNER JOIN IRIS_CODE_SET C ON J.CANCEL_CODE =  C.CODE ) t5 ON t1.JNO = t5.JNO
 			WHERE t1.sno > 100
 			AND t1.IS_USE = 'Y'
+			AND t1.STATUS = 'Y' 
 			ORDER BY
 				t1.IS_DEFAULT DESC, JNO DESC`
 	if err := db.SelectContext(ctx, &projectInfos, sql, role, uno, uno); err != nil {
@@ -1067,10 +1068,10 @@ func (r *Repository) AddProject(ctx context.Context, tx Execer, project entity.R
 
 	query := `
 			INSERT INTO IRIS_SITE_JOB(
-				SNO, JNO, IS_USE, IS_DEFAULT, REG_DATE,
+				SNO, JNO, IS_USE, STATUS, IS_DEFAULT, REG_DATE,
 				REG_AGENT, REG_USER, REG_UNO
 			) VALUES (
-				:1, :2, 'Y', 'N', SYSDATE,
+				:1, :2, 'Y', 'Y', 'N', SYSDATE,
 				:3, :4, :5
 			)`
 
@@ -1122,7 +1123,7 @@ func (r *Repository) ModifyUseProject(ctx context.Context, tx Execer, project en
 
 	query := `
 		UPDATE IRIS_SITE_JOB
-		SET IS_USE = :1,
+		SET STATUS = :1,
 		    MOD_AGENT = :2,
 		    MOD_USER = :3,
 		    MOD_UNO = :4,
@@ -1162,7 +1163,7 @@ func (r *Repository) ModifyProjectIsNonUse(ctx context.Context, tx Execer, site 
 
 	query := fmt.Sprintf(`
 			UPDATE IRIS_SITE_JOB
-			SET IS_USE = 'N',
+			SET STATUS = 'S',
 			MOD_AGENT = :1,
 		    MOD_USER = :2,
 		    MOD_UNO = :3,
@@ -1189,7 +1190,7 @@ func (r *Repository) ModifyProjectIsUse(ctx context.Context, tx Execer, site ent
 
 	query := fmt.Sprintf(`
 			UPDATE IRIS_SITE_JOB
-			SET IS_USE = 'Y',
+			SET STATUS = 'Y',
 			MOD_AGENT = :1,
 		    MOD_USER = :2,
 		    MOD_UNO = :3,

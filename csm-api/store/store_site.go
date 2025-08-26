@@ -41,7 +41,7 @@ func (r *Repository) GetSiteList(ctx context.Context, db Queryer, targetDate tim
 					t1.ETC,
 					t1.LOC_CODE,
 					t1.LOC_NAME,
-					t1.IS_USE,
+					t1.STATUS,
 					t1.REG_DATE,
 					t1.REG_USER,
 					t1.REG_UNO,
@@ -73,6 +73,7 @@ func (r *Repository) GetSiteList(ctx context.Context, db Queryer, targetDate tim
 				INNER JOIN IRIS_SITE_DATE t4 ON t1.SNO = t4.SNO AND :6 >= t4.OPENING_DATE 
 				-- (:6 BETWEEN OPENING_DATE AND CLOSING_ACTUAL_DATE) OR (:7 >= OPENING_DATE AND CLOSING_ACTUAL_DATE IS NULL) OR (:8 <= CLOSING_ACTUAL_DATE AND OPENING_DATE IS NULL)
 				WHERE t1.SNO > -1
+				AND t1.IS_USE='Y' 
 				AND t1.STATUS = :7
 				ORDER BY t1.REG_DATE ASC,t1.SNO DESC`
 
@@ -235,12 +236,12 @@ func (r *Repository) AddSite(ctx context.Context, db Queryer, tx Execer, jno int
 	query := `
 			INSERT INTO IRIS_SITE_SET(
 				SNO, 
-			  	SITE_NM, LOC_CODE, LOC_NAME, IS_USE, 
+			  	SITE_NM, LOC_CODE, LOC_NAME, IS_USE, STATUS,
 			    REG_DATE, REG_AGENT, REG_USER, REG_UNO
 			) 
 			SELECT 
 				SEQ_IRIS_SITE_SET.NEXTVAL,
-				JOB_NAME, JOB_LOC, JOB_LOC_NAME, 'Y', 
+				JOB_NAME, JOB_LOC, JOB_LOC_NAME, 'Y', 'Y'
 				SYSDATE, :1, :2, :3
 			FROM s_job_info 
 			WHERE JNO = :4`
@@ -251,11 +252,12 @@ func (r *Repository) AddSite(ctx context.Context, db Queryer, tx Execer, jno int
 	// IRIS_SITE_JOB 생성
 	query = `
 			INSERT INTO IRIS_SITE_JOB(
-				SNO, JNO, IS_USE, IS_DEFAULT, REG_DATE,
+				SNO, 
+				JNO, IS_USE, STATUS, IS_DEFAULT, REG_DATE,
 				REG_AGENT, REG_USER, REG_UNO
 			) VALUES (
 				(SELECT SNO FROM IRIS_SITE_SET S INNER JOIN (SELECT * FROM S_JOB_INFO WHERE JNO = :1) J ON S.SITE_NM = J.JOB_NAME),
-			    :2, 'Y', 'Y', SYSDATE,
+			    :2, 'Y', 'Y', 'Y', SYSDATE,
 				:3, :4, :5
 			)`
 	if _, err := tx.ExecContext(ctx, query, jno, jno, user.Agent, user.UserName, user.Uno); err != nil {
@@ -291,7 +293,7 @@ func (r *Repository) ModifySiteIsNonUse(ctx context.Context, tx Execer, site ent
 	query := `
 			UPDATE IRIS_SITE_SET
 			SET 
-			    IS_USE = 'N',
+			    STATUS = 'S',
 				MOD_AGENT = :1,
 				MOD_USER = :2,
 				MOD_UNO = :3,
@@ -313,7 +315,7 @@ func (r *Repository) ModifySiteIsUse(ctx context.Context, tx Execer, site entity
 	query := `
 			UPDATE IRIS_SITE_SET
 			SET 
-			    IS_USE = 'Y',
+			    STATUS = 'Y',
 				MOD_AGENT = :1,
 				MOD_USER = :2,
 				MOD_UNO = :3,

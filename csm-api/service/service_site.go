@@ -363,19 +363,22 @@ func (s *ServiceSite) ModifySiteIsNonUse(ctx context.Context, site entity.ReqSit
 		return utils.CustomErrorf(err)
 	}
 
-	// 위치
-	if err = s.SitePosStore.ModifySitePosIsNonUse(ctx, tx, site); err != nil {
-		return utils.CustomErrorf(err)
-	}
+	/*
+		* 현장의 status만으로 관리(정보 불러올 때, site의 sno로 불러오기 때문에)
+		// 위치
+		if err = s.SitePosStore.ModifySitePosIsNonUse(ctx, tx, site); err != nil {
+			return utils.CustomErrorf(err)
+		}
 
-	// 날짜
-	if err = s.SiteDateStore.ModifySiteDateIsNonUse(ctx, tx, site); err != nil {
-		return utils.CustomErrorf(err)
-	}
+		// 날짜
+		if err = s.SiteDateStore.ModifySiteDateIsNonUse(ctx, tx, site); err != nil {
+			return utils.CustomErrorf(err)
+		}
+	*/
 	return
 }
 
-// func: 현장 사용안함 변경
+// func: 현장 사용함 변경
 // @param
 // -
 func (s *ServiceSite) ModifySiteIsUse(ctx context.Context, site entity.ReqSite) (err error) {
@@ -396,15 +399,18 @@ func (s *ServiceSite) ModifySiteIsUse(ctx context.Context, site entity.ReqSite) 
 		return utils.CustomErrorf(err)
 	}
 
-	// 위치
-	if err = s.SitePosStore.ModifySitePosIsUse(ctx, tx, site); err != nil {
-		return utils.CustomErrorf(err)
-	}
+	/*
+		** 현장의 status만으로 관리(정보 불러올 때, site의 sno로 불러오기 때문에)
+		// 위치
+		if err = s.SitePosStore.ModifySitePosIsUse(ctx, tx, site); err != nil {
+			return utils.CustomErrorf(err)
+		}
 
-	// 날짜
-	if err = s.SiteDateStore.ModifySiteDateIsUse(ctx, tx, site); err != nil {
-		return utils.CustomErrorf(err)
-	}
+		// 날짜
+		if err = s.SiteDateStore.ModifySiteDateIsUse(ctx, tx, site); err != nil {
+			return utils.CustomErrorf(err)
+		}
+	*/
 	return
 }
 
