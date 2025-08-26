@@ -356,7 +356,7 @@ func (s *ServiceWorker) ModifyWorkerDeadlineInit(ctx context.Context) (err error
 	return
 }
 
-// func: 현장 근로자 철야 처리
+// func: 현장 근로자 철야 처리 (scheduler: 현재 수동으로 마감하기로 하여 사용하지 않음)
 // @param
 // -
 func (s *ServiceWorker) ModifyWorkerOverTime(ctx context.Context) (count int, err error) {
@@ -365,8 +365,6 @@ func (s *ServiceWorker) ModifyWorkerOverTime(ctx context.Context) (count int, er
 		return 0, utils.CustomErrorf(err)
 	}
 
-	defer txutil.DeferTx(tx, &err)
-
 	// 철야 근로자 존재 여부 확인
 	workerOverTimes := &entity.WorkerOverTimes{}
 	workerOverTimes, err = s.Store.GetWorkerOverTime(ctx, s.SafeDB)
@@ -374,6 +372,8 @@ func (s *ServiceWorker) ModifyWorkerOverTime(ctx context.Context) (count int, er
 		return 0, utils.CustomErrorf(err)
 	}
 	count = len(*workerOverTimes)
+
+	defer txutil.DeferTx(tx, &err)
 
 	for _, workerOverTime := range *workerOverTimes {
 

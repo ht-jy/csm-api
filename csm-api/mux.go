@@ -59,10 +59,10 @@ func newMux(ctx context.Context, safeDb *sqlx.DB, timesheetDb *sqlx.DB) (http.Ha
 
 	mux.Route("/csm", func(csm chi.Router) {
 		// 공개 라우팅
-		csm.Mount("/login", route.LoginRoute(jwt, safeDb, timesheetDb, &r))     // 로그인
-		csm.Mount("/logout", route.LogoutRoute())                               // 로그아웃
-		csm.Mount("/jwt-validation", route.JwtVaildRoute(jwt))                  // jwt 유효성 검사
-		csm.Mount("/init", route.InitApiRoute(safeDb, timesheetDb, apiCfg, &r)) // api로 초기 세팅
+		csm.Mount("/login", route.LoginRoute(jwt, safeDb, timesheetDb, &r)) // 로그인
+		csm.Mount("/logout", route.LogoutRoute())                           // 로그아웃
+		csm.Mount("/jwt-validation", route.JwtVaildRoute(jwt))              // jwt 유효성 검사
+		//csm.Mount("/init", route.InitApiRoute(safeDb, timesheetDb, apiCfg, &r)) // api로 초기 세팅
 
 		// 인증 라우팅
 		csm.Group(func(router chi.Router) {
