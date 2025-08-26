@@ -42,7 +42,7 @@ type ServiceSite struct {
 // func: 현장 관리 리스트 조회
 // @param
 // - targetDate: 현재시간
-func (s *ServiceSite) GetSiteList(ctx context.Context, targetDate time.Time, isRole bool) (*entity.Sites, error) {
+func (s *ServiceSite) GetSiteList(ctx context.Context, targetDate time.Time, isRole bool, isNonUse bool) (*entity.Sites, error) {
 
 	unoString, _ := auth.GetContext(ctx, auth.Uno{})
 
@@ -58,8 +58,15 @@ func (s *ServiceSite) GetSiteList(ctx context.Context, targetDate time.Time, isR
 		return nil, utils.CustomErrorf(err)
 	}
 
+	var status string
+	if isNonUse { // 현장 종료된 경우
+		status = "S"
+	} else {
+		status = "Y"
+	}
+
 	//현장관리 테이블 조회
-	sites, err := s.Store.GetSiteList(ctx, s.SafeDB, targetDate, roleInt, uno)
+	sites, err := s.Store.GetSiteList(ctx, s.SafeDB, targetDate, roleInt, uno, status)
 	if err != nil {
 		return &entity.Sites{}, utils.CustomErrorf(err)
 	}

@@ -22,7 +22,7 @@ import (
 // func: 현장 관리 조회
 // @param
 // - targetDate: 현재시간
-func (r *Repository) GetSiteList(ctx context.Context, db Queryer, targetDate time.Time, role int, uno int64) (*entity.Sites, error) {
+func (r *Repository) GetSiteList(ctx context.Context, db Queryer, targetDate time.Time, role int, uno int64, status string) (*entity.Sites, error) {
 	sites := entity.Sites{}
 
 	sql := `
@@ -73,10 +73,10 @@ func (r *Repository) GetSiteList(ctx context.Context, db Queryer, targetDate tim
 				INNER JOIN IRIS_SITE_DATE t4 ON t1.SNO = t4.SNO AND :6 >= t4.OPENING_DATE 
 				-- (:6 BETWEEN OPENING_DATE AND CLOSING_ACTUAL_DATE) OR (:7 >= OPENING_DATE AND CLOSING_ACTUAL_DATE IS NULL) OR (:8 <= CLOSING_ACTUAL_DATE AND OPENING_DATE IS NULL)
 				WHERE t1.SNO > -1
-				--AND t1.IS_USE = 'Y'
+				AND t1.STATUS = :7
 				ORDER BY t1.REG_DATE ASC,t1.SNO DESC`
 
-	if err := db.SelectContext(ctx, &sites, sql, role, uno, uno, targetDate, targetDate, targetDate); err != nil {
+	if err := db.SelectContext(ctx, &sites, sql, role, uno, uno, targetDate, targetDate, targetDate, status); err != nil {
 		return &sites, utils.CustomErrorf(err)
 	}
 
