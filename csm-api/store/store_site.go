@@ -56,27 +56,27 @@ func (r *Repository) GetSiteList(ctx context.Context, db Queryer, targetDate tim
 							SELECT COUNT(*)
 							FROM IRIS_WORKER_DAILY_SET d
 							WHERE d.SNO = t1.SNO
-							  AND TRUNC(d.RECORD_DATE) = TRUNC(:5)
+							  AND TRUNC(d.RECORD_DATE) = TRUNC(:4)
 							  AND d.WORK_STATE = '01'
 						) >= 5 THEN 'Y'
 						WHEN EXISTS (
 							SELECT 1
 							FROM IRIS_SCH_REST_SET r
 							WHERE r.JNO = t2.JNO
-							  AND TO_DATE(r.REST_YEAR || LPAD(r.REST_MONTH, 2, '0') || LPAD(r.REST_DAY, 2, '0'), 'YYYYMMDD') = TRUNC(:4)
+							  AND TO_DATE(r.REST_YEAR || LPAD(r.REST_MONTH, 2, '0') || LPAD(r.REST_DAY, 2, '0'), 'YYYYMMDD') = TRUNC(:5)
 						) THEN 'H'
 						ELSE 'C'
 					END AS CURRENT_SITE_STATS
 				FROM IRIS_SITE_SET t1
 				INNER JOIN IRIS_SITE_JOB t2 ON t1.SNO = t2.SNO AND t2.IS_DEFAULT = 'Y'
 				INNER JOIN S_JOB_INFO t3 ON t2.JNO = t3.JNO AND t3.JNO IN (SELECT * FROM USER_IN_JNO)
-				INNER JOIN IRIS_SITE_DATE t4 ON t1.SNO = t4.SNO AND (t1.STATUS = 'S' OR :6 >= t4.OPENING_DATE OR t4.OPENING_DATE IS NULL)
+				INNER JOIN IRIS_SITE_DATE t4 ON t1.SNO = t4.SNO AND ( :6 = 'S' OR :7 >= t4.OPENING_DATE OR t4.OPENING_DATE IS NULL)
 				WHERE t1.SNO > -1
-				AND t1.IS_USE='Y' 
-				AND t1.STATUS = :7
+					AND t1.IS_USE = 'Y' 
+					AND t1.STATUS = :8
 				ORDER BY t1.REG_DATE ASC,t1.SNO DESC`
 
-	if err := db.SelectContext(ctx, &sites, sql, role, uno, uno, targetDate, targetDate, targetDate, status); err != nil {
+	if err := db.SelectContext(ctx, &sites, sql, role, uno, uno, targetDate, targetDate, status, targetDate, status); err != nil {
 		return &sites, utils.CustomErrorf(err)
 	}
 
