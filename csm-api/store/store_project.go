@@ -84,26 +84,27 @@ func (r *Repository) GetProjectList(ctx context.Context, db Queryer, sno int64, 
 			),
 			equip AS (
 				SELECT SNO, JNO, CNT
-				FROM IRIS_EQUIP_TEMP
+				FROM IRIS_EQUIP_SET
+				WHERE TRUNC(RECORD_DATE) = TO_DATE(:8, 'YYYY-MM-DD')
 			),
 			work_rate_info AS (
 				SELECT WORK_RATE, IS_WORK_RATE, JNO FROM (
 					SELECT R1.WORK_RATE, 'Y' AS IS_WORK_RATE, R1.JNO
 					FROM IRIS_JOB_WORK_RATE R1
-					WHERE R1.RECORD_DATE = TO_DATE(:8, 'YYYY-MM-DD')
+					WHERE R1.RECORD_DATE = TO_DATE(:9, 'YYYY-MM-DD')
 					UNION ALL
 					SELECT R3.WORK_RATE, 'N' AS IS_WORK_RATE, R3.JNO
 					FROM IRIS_JOB_WORK_RATE R3
 					JOIN (
 						SELECT JNO, MAX(RECORD_DATE) AS MAX_RECORD_DATE
 						FROM IRIS_JOB_WORK_RATE
-						WHERE RECORD_DATE < TO_DATE(:9, 'YYYY-MM-DD')
+						WHERE RECORD_DATE < TO_DATE(:10, 'YYYY-MM-DD')
 						GROUP BY JNO
 					) R4 ON R3.JNO = R4.JNO AND R3.RECORD_DATE = R4.MAX_RECORD_DATE
 					WHERE NOT EXISTS (
 						SELECT 1
 						FROM IRIS_JOB_WORK_RATE R6
-						WHERE R6.RECORD_DATE = TO_DATE(:10, 'YYYY-MM-DD')
+						WHERE R6.RECORD_DATE = TO_DATE(:11, 'YYYY-MM-DD')
 						AND R6.JNO = R3.JNO
 					)
 					UNION ALL
@@ -113,14 +114,14 @@ func (r *Repository) GetProjectList(ctx context.Context, db Queryer, sno int64, 
 						SELECT 1
 						FROM IRIS_JOB_WORK_RATE R8
 						WHERE R8.JNO = R7.JNO
-						AND R8.RECORD_DATE <= TO_DATE(:11, 'YYYY-MM-DD')
+						AND R8.RECORD_DATE <= TO_DATE(:12, 'YYYY-MM-DD')
 					)
 				)
 			)
 			SELECT
 				t1.SNO,
 				t1.JNO,
-				t1.IS_USE,
+				t1.STATUS,
 				t1.IS_DEFAULT,
 				t1.REG_DATE,
 				t1.REG_USER,
@@ -177,13 +178,13 @@ func (r *Repository) GetProjectList(ctx context.Context, db Queryer, sno int64, 
 			LEFT JOIN worker_counts wc ON t1.SNO = wc.SNO AND t1.JNO = wc.JNO
 			LEFT JOIN equip eq ON t1.SNO = eq.SNO  AND t1.JNO = eq.JNO
 			WHERE t1.SNO > 100
-			AND (:12 IS NULL OR t1.SNO = :13)
+			AND (:13 IS NULL OR t1.SNO = :14)
 			ORDER BY IS_DEFAULT DESC, JNO DESC`
 
 	if err := db.SelectContext(ctx, &projectInfos, sql,
 		snoParam, snoParam, targetDate, targetDate, targetDate,
 		targetDate, targetDate, formattedDate, formattedDate, formattedDate,
-		formattedDate, snoParam, snoParam,
+		formattedDate, formattedDate, snoParam, snoParam,
 	); err != nil {
 		return &projectInfos, utils.CustomErrorf(err)
 	}
@@ -253,7 +254,8 @@ func (r *Repository) GetProjectWorkerCountList(ctx context.Context, db Queryer, 
 				),
 				equip AS (
 					SELECT SNO, JNO, CNT
-					FROM IRIS_EQUIP_TEMP
+					FROM  IRIS_EQUIP_SET
+					WHERE TRUNC(RECORD_DATE) = TRUNC(:8)
 				)
 				SELECT 
 					t1.SNO,
@@ -269,7 +271,7 @@ func (r *Repository) GetProjectWorkerCountList(ctx context.Context, db Queryer, 
 				LEFT JOIN equip eq ON t1.SNO = eq.SNO  AND t1.JNO = eq.JNO
 				WHERE t1.SNO > 100`
 
-	if err := db.SelectContext(ctx, &list, query, targetDate, targetDate, targetDate, targetDate); err != nil {
+	if err := db.SelectContext(ctx, &list, query, targetDate, targetDate, targetDate, targetDate, targetDate); err != nil {
 		return nil, utils.CustomErrorf(err)
 	}
 
@@ -357,7 +359,7 @@ func (r *Repository) GetProjectNmList(ctx context.Context, db Queryer, role int,
     			t1.SNO,
 				t1.JNO,
 				t2.JOB_NAME as PROJECT_NM,
-				t1.WORK_RATE,
+				--t1.WORK_RATE,
 				t5.CANCEL_DAY
 			FROM
 				IRIS_SITE_JOB t1
@@ -367,6 +369,7 @@ func (r *Repository) GetProjectNmList(ctx context.Context, db Queryer, role int,
 				INNER JOIN ( SELECT J.JNO, C.UDF_VAL_03 AS CANCEL_DAY FROM IRIS_JOB_SET J INNER JOIN IRIS_CODE_SET C ON J.CANCEL_CODE =  C.CODE ) t5 ON t1.JNO = t5.JNO
 			WHERE t1.sno > 100
 			AND t1.IS_USE = 'Y'
+			AND t1.STATUS = 'Y' 
 			ORDER BY
 				t1.IS_DEFAULT DESC, JNO DESC`
 	if err := db.SelectContext(ctx, &projectInfos, sql, role, uno, uno); err != nil {
@@ -1065,10 +1068,10 @@ func (r *Repository) AddProject(ctx context.Context, tx Execer, project entity.R
 
 	query := `
 			INSERT INTO IRIS_SITE_JOB(
-				SNO, JNO, IS_USE, IS_DEFAULT, REG_DATE,
+				SNO, JNO, IS_USE, STATUS, IS_DEFAULT, REG_DATE,
 				REG_AGENT, REG_USER, REG_UNO
 			) VALUES (
-				:1, :2, 'Y', 'N', SYSDATE,
+				:1, :2, 'Y', 'Y', 'N', SYSDATE,
 				:3, :4, :5
 			)`
 
@@ -1120,7 +1123,7 @@ func (r *Repository) ModifyUseProject(ctx context.Context, tx Execer, project en
 
 	query := `
 		UPDATE IRIS_SITE_JOB
-		SET IS_USE = :1,
+		SET STATUS = :1,
 		    MOD_AGENT = :2,
 		    MOD_USER = :3,
 		    MOD_UNO = :4,
@@ -1160,7 +1163,7 @@ func (r *Repository) ModifyProjectIsNonUse(ctx context.Context, tx Execer, site 
 
 	query := fmt.Sprintf(`
 			UPDATE IRIS_SITE_JOB
-			SET IS_USE = 'N',
+			SET STATUS = 'S',
 			MOD_AGENT = :1,
 		    MOD_USER = :2,
 		    MOD_UNO = :3,
@@ -1187,7 +1190,7 @@ func (r *Repository) ModifyProjectIsUse(ctx context.Context, tx Execer, site ent
 
 	query := fmt.Sprintf(`
 			UPDATE IRIS_SITE_JOB
-			SET IS_USE = 'Y',
+			SET STATUS = 'Y',
 			MOD_AGENT = :1,
 		    MOD_USER = :2,
 		    MOD_UNO = :3,

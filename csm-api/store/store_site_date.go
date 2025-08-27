@@ -50,7 +50,7 @@ func (r *Repository) ModifySiteDate(ctx context.Context, tx Execer, sno int64, s
 				CLOSING_ACTUAL_DATE = :4
 			WHERE
 				SNO = :5 
-				-- AND IS_USE = 'Y'
+				AND IS_USE = 'Y'
 			`)
 
 	if _, err := tx.ExecContext(ctx, query, siteDateSql.OpeningDate, siteDateSql.ClosingPlanDate, siteDateSql.ClosingForecastDate, siteDateSql.ClosingActualDate, sno); err != nil {

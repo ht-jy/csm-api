@@ -7,7 +7,7 @@ import (
 type ProjectInfo struct {
 	Sno                   null.Int    `json:"sno" db:"SNO"`
 	Jno                   null.Int    `json:"jno" db:"JNO"`
-	IsUse                 null.String `json:"is_use" db:"IS_USE"`
+	Status                null.String `json:"status" db:"STATUS"`
 	IsDefault             null.String `json:"is_default" db:"IS_DEFAULT"`
 	ProjectType           null.String `json:"project_type" db:"PROJECT_TYPE"`
 	ProjectTypeNm         null.String `json:"project_type_nm" db:"PROJECT_TYPE_NM"`

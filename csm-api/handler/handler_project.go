@@ -81,11 +81,6 @@ func (h *HandlerProject) JobNameList(w http.ResponseWriter, r *http.Request) {
 	SuccessValuesResponse(ctx, w, values)
 }
 
-// struct, func:
-type HandlerUsedProject struct {
-	Service service.ProjectService
-}
-
 // func: 공사관리시스템 등록 프로젝트 전체 조회
 // @param
 // -

@@ -266,7 +266,7 @@ func (r *Repository) GetDeviceLog(ctx context.Context, db Queryer) (*entity.Recd
 	recodes := entity.RecdLogOrigins{}
 
 	query := `
-		SELECT IRIS_DATA FROM IRIS_RECD_LOG WHERE to_date(REG_DATE) = TRUNC(SYSDATE) `
+		SELECT IRIS_DATA FROM IRIS_RECD_LOG WHERE to_date(REG_DATE) = TRUNC(SYSDATE) AND IRIS_DATA IS NOT NULL`
 
 	if err := db.SelectContext(ctx, &recodes, query); err != nil {
 		return nil, utils.CustomErrorf(err)

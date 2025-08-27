@@ -126,14 +126,16 @@ func RetrySearchTextConvert(retry string, columns []string) string {
 						isAllColumn = true
 					}
 					var temp []string
-					for _, column := range columns {
-						if isAllColumn {
-							temp = append(temp, fmt.Sprintf(`LOWER(%s) LIKE LOWER('%%%s%%')`, column, searchWord))
-						} else {
-							for _, f := range fieldTargets {
-								if strings.HasSuffix(column, f) {
-									temp = append(temp, fmt.Sprintf(`LOWER(%s) LIKE LOWER('%%%s%%')`, column, searchWord))
-									break
+					for _, word := range strings.Split(searchWord, "|") { // 전체검색 시 |로 구분되는 값이 조회 되지 않아 코드 추가
+						for _, column := range columns {
+							if isAllColumn {
+								temp = append(temp, fmt.Sprintf(`LOWER(%s) LIKE LOWER('%%%s%%')`, column, word))
+							} else {
+								for _, f := range fieldTargets {
+									if strings.HasSuffix(column, f) {
+										temp = append(temp, fmt.Sprintf(`LOWER(%s) LIKE LOWER('%%%s%%')`, column, word))
+										break
+									}
 								}
 							}
 						}

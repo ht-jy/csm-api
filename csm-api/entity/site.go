@@ -32,7 +32,7 @@ type Site struct {
 	Etc                null.String `json:"etc" db:"ETC"`
 	LocCode            null.String `json:"loc_code" db:"LOC_CODE"`
 	LocName            null.String `json:"loc_name" db:"LOC_NAME"`
-	IsUse              null.String `json:"is_use" db:"IS_USE"`
+	Status             null.String `json:"status" db:"STATUS"`
 	DefaultJno         null.Int    `json:"default_jno" db:"DEFAULT_JNO"`
 	DefaultProjectName null.String `json:"default_project_name" db:"DEFAULT_PROJECT_NAME"`
 	DefaultProjectNo   null.String `json:"default_project_no" db:"DEFAULT_PROJECT_NO"`

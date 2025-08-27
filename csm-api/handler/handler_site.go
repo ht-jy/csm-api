@@ -58,8 +58,15 @@ func (s *HandlerSite) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	isNonUseStr := r.URL.Query().Get("isNonUse")
+	isNonUse, err := strconv.ParseBool(isNonUseStr)
+	if err != nil {
+		BadRequestResponse(ctx, w)
+		return
+	}
+
 	// 현장 관리 리스트 조회
-	sites, err := s.Service.GetSiteList(ctx, targetDate, isRole)
+	sites, err := s.Service.GetSiteList(ctx, targetDate, isRole, isNonUse)
 	if err != nil {
 		FailResponse(ctx, w, err)
 		return

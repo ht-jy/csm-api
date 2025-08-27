@@ -16,7 +16,7 @@ type GetUserValidService interface {
 }
 
 type SiteService interface {
-	GetSiteList(ctx context.Context, targetDate time.Time, isRole bool) (*entity.Sites, error)
+	GetSiteList(ctx context.Context, targetDate time.Time, isRole bool, isNonUse bool) (*entity.Sites, error)
 	GetSiteNmList(ctx context.Context, page entity.Page, search entity.Site, nonSite int) (*entity.Sites, error)
 	GetSiteNmCount(ctx context.Context, search entity.Site, nonSite int) (int, error)
 	GetSiteStatsList(ctx context.Context, targetDate time.Time) (*entity.Sites, error)
