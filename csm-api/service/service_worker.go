@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"csm-api/config"
 	"csm-api/entity"
 	"csm-api/store"
 	"csm-api/txutil"
@@ -24,6 +25,7 @@ type ServiceWorker struct {
 	SafeDB  store.Queryer
 	SafeTDB store.Beginner
 	Store   store.WorkerStore
+	Config  *config.Config
 }
 
 // func: 전체 근로자 조회
@@ -108,6 +110,14 @@ func (s *ServiceWorker) AddWorker(ctx context.Context, worker entity.Worker) (er
 	if err != nil {
 		return utils.CustomErrorf(err)
 	}
+
+	// 주민등록번호 암호화
+	key := s.Config.SecretKey
+	rrn, err := worker.Encode(worker.Rrn.String, key)
+	if err != nil {
+		return utils.CustomErrorf(err)
+	}
+	worker.RegNo = utils.ParseNullString(rrn)
 
 	defer txutil.DeferTx(tx, &err)
 

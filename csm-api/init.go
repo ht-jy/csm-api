@@ -34,11 +34,17 @@ func NewInit(safeDb *sqlx.DB) (*Init, error) {
 		_ = entity.WriteErrorLog(context.Background(), utils.CustomMessageErrorf("config.ApiConfig", err))
 	}
 
+	cfg, err := config.NewConfig()
+	if err != nil {
+		_ = entity.WriteErrorLog(context.Background(), utils.CustomMessageErrorf("config.Config", err))
+	}
+
 	init := &Init{
 		WorkerService: &service.ServiceWorker{
 			SafeDB:  safeDb,
 			SafeTDB: safeDb,
 			Store:   &r,
+			Config:  cfg,
 		},
 		WorkHourService: &service.ServiceWorkHour{
 			SafeDB:  safeDb,

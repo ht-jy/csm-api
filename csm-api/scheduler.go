@@ -34,7 +34,7 @@ type Scheduler struct {
 	cron                  *cron.Cron
 }
 
-func NewScheduler(safeDb *sqlx.DB, apiCfg *config.ApiConfig, timesheetDb *sqlx.DB) (*Scheduler, error) {
+func NewScheduler(safeDb *sqlx.DB, apiCfg *config.ApiConfig, cfg *config.Config, timesheetDb *sqlx.DB) (*Scheduler, error) {
 	r := store.Repository{Clocker: clock.RealClock{}}
 	c := cron.New(cron.WithSeconds())
 
@@ -43,6 +43,7 @@ func NewScheduler(safeDb *sqlx.DB, apiCfg *config.ApiConfig, timesheetDb *sqlx.D
 			SafeDB:  safeDb,
 			SafeTDB: safeDb,
 			Store:   &r,
+			Config:  cfg,
 		},
 		WorkHourService: &service.ServiceWorkHour{
 			SafeDB:  safeDb,

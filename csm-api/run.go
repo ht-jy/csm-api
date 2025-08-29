@@ -52,7 +52,13 @@ func runSchedule(ctx context.Context, safeDb, timesheetDb *sqlx.DB) error {
 	if err != nil {
 		return utils.CustomMessageErrorf("config.ApiConfig", err)
 	}
-	scheduler, err := NewScheduler(safeDb, apiCfg, timesheetDb)
+
+	cfg, err := config.NewConfig()
+	if err != nil {
+		return utils.CustomMessageErrorf("config.Config", err)
+	}
+
+	scheduler, err := NewScheduler(safeDb, apiCfg, cfg, timesheetDb)
 	if err != nil {
 		return utils.CustomMessageErrorf("NewScheduler", err)
 	}

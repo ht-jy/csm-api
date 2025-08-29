@@ -1,7 +1,13 @@
 package entity
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"encoding/base64"
+	"errors"
 	"github.com/guregu/null"
+	"io"
 )
 
 type Worker struct {
@@ -26,6 +32,7 @@ type Worker struct {
 	RetireDate  null.Time   `json:"retire_date" db:"RETIRE_DATE"`
 	RecordDate  null.String `json:"record_date" db:"RECORD_DATE"`
 	RegNo       null.String `json:"reg_no" db:"REG_NO"`
+	Rrn         null.String `json:"rrn" db:"RRN"`
 	FailReason  null.String `json:"fail_reason" db:"FAIL_REASON"`
 	WorkerReason
 	Base
@@ -46,6 +53,7 @@ type WorkerDaily struct {
 	DiscName        null.String `json:"disc_name" db:"DISC_NAME"` // 공종명
 	Phone           null.String `json:"phone" db:"PHONE"`
 	RegNo           null.String `json:"reg_no" db:"REG_NO"`
+	Rrn             null.String `json:"rrn" db:"RRN"`
 	RecordDate      null.Time   `json:"record_date" db:"RECORD_DATE"`
 	InRecogTime     null.Time   `json:"in_recog_time" db:"IN_RECOG_TIME"`   //출근시간
 	OutRecogTime    null.Time   `json:"out_recog_time" db:"OUT_RECOG_TIME"` //퇴근시간
@@ -133,4 +141,56 @@ type WorkerReason struct {
 	ReasonType null.String `json:"reason_type" db:"REASON_TYPE"`
 	HisStatus  null.String `json:"his_status" db:"HIS_STATUS"`
 	HisName    null.String `json:"his_name" db:"HIS_NAME"`
+}
+
+func (c *Worker) Decode(encKey string, secretKey string) (string, error) {
+	key := []byte(secretKey)
+	ct, err := base64.StdEncoding.DecodeString(encKey)
+	if err != nil {
+		return "", err
+	}
+
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", err
+	}
+
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", err
+	}
+
+	nonceSize := gcm.NonceSize()
+	if len(ct) < nonceSize {
+		return "", errors.New("ciphertext too short")
+	}
+	nonce, data := ct[:nonceSize], ct[nonceSize:]
+
+	plain, err := gcm.Open(nil, nonce, data, nil)
+	if err != nil {
+		return "", err
+	}
+	return string(plain), nil
+}
+
+func (c *Worker) Encode(regNo string, secretKey string) (string, error) {
+	key := []byte(secretKey)
+
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", err
+	}
+
+	aesGCM, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", err
+	}
+
+	nonce := make([]byte, aesGCM.NonceSize())
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		return "", err
+	}
+
+	ciphertext := aesGCM.Seal(nonce, nonce, []byte(regNo), nil)
+	return base64.StdEncoding.EncodeToString(ciphertext), nil
 }

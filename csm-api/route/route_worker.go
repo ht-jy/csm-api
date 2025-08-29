@@ -1,6 +1,7 @@
 package route
 
 import (
+	"csm-api/config"
 	"csm-api/handler"
 	"csm-api/service"
 	"csm-api/store"
@@ -8,7 +9,7 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-func WorkerRoute(safeDB *sqlx.DB, r *store.Repository) chi.Router {
+func WorkerRoute(safeDB *sqlx.DB, cfg *config.Config, r *store.Repository) chi.Router {
 	router := chi.NewRouter()
 
 	workerHandler := handler.HandlerWorker{
@@ -16,6 +17,7 @@ func WorkerRoute(safeDB *sqlx.DB, r *store.Repository) chi.Router {
 			SafeDB:  safeDB,
 			SafeTDB: safeDB,
 			Store:   r,
+			Config:  cfg,
 		},
 	}
 
