@@ -385,11 +385,13 @@ func (s *ServiceExcel) ImportAddWorker(ctx context.Context, path string, worker 
 		if err != nil || strings.TrimSpace(userNm) == "" {
 			break
 		}
-		// C: 주민등록번호
+		// C: 주민등록번호 -> 성별까지만
 		identityNumberRaw, _ := f.GetCellValue(sheet, fmt.Sprintf("C%d", row))
 		regNo := strings.ReplaceAll(identityNumberRaw, "-", "")
-		if len(regNo) != 13 {
-			failReason = "주민등록번호 13자리를 입력하지 않았습니다."
+		if len(regNo) < 7 {
+			failReason = "주민등록번호는 성별(7자리)까지 입력해주세요."
+		} else if sex, _ := strconv.ParseInt(string(regNo[6]), 10, 64); sex > 4 {
+			failReason = "주민등록번호는 성별(7자리)까지 입력해주세요."
 		}
 
 		// D: 아이디
