@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"csm-api/config"
 	"csm-api/entity"
 	"csm-api/store"
 	"csm-api/txutil"
@@ -24,6 +25,7 @@ type ServiceWorker struct {
 	SafeDB  store.Queryer
 	SafeTDB store.Beginner
 	Store   store.WorkerStore
+	Config  *config.Config
 }
 
 // func: 전체 근로자 조회

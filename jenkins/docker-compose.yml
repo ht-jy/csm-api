@@ -9,9 +9,9 @@ services:
       - "50000:50000"
     volumes:
       - D:/jenkins_home:/var/jenkins_home:rw
-      - D:/project/2025/csm/csm-front:/tmp/csm-front:rw
-      - D:/project/2025/csm/csm-api/csm-api:/tmp/csm-api:rw
-      - D:/project/2025/csm/csm-api/base-image:/tmp/base-image:rw
+      - D:/Workspace/CSM/csm-front:/tmp/csm-front:rw
+      - D:/Workspace/CSM/csm-api/csm-api:/tmp/csm-api:rw
+      - D:/Workspace/CSM/csm-api/base-image:/tmp/base-image:rw
       - /var/run/docker.sock:/var/run/docker.sock:rw
     environment:
       - DOCKER_HOST=unix:///var/run/docker.sock  # Docker 소켓 설정

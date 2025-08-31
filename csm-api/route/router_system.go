@@ -9,7 +9,7 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-func SystemRoute(safeDb *sqlx.DB, timesheetDb *sqlx.DB, apiCfg *config.ApiConfig, r *store.Repository) chi.Router {
+func SystemRoute(safeDb *sqlx.DB, timesheetDb *sqlx.DB, apiCfg *config.ApiConfig, cfg *config.Config, r *store.Repository) chi.Router {
 
 	router := chi.NewRouter()
 
@@ -19,6 +19,7 @@ func SystemRoute(safeDb *sqlx.DB, timesheetDb *sqlx.DB, apiCfg *config.ApiConfig
 			SafeDB:  safeDb,
 			SafeTDB: safeDb,
 			Store:   r,
+			Config:  cfg,
 		},
 		WorkHourService: &service.ServiceWorkHour{
 			SafeDB:  safeDb,

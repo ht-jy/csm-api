@@ -57,35 +57,40 @@ func newMux(ctx context.Context, safeDb *sqlx.DB, timesheetDb *sqlx.DB) (http.Ha
 		return nil, err
 	}
 
+	cfg, err := config.NewConfig()
+	if err != nil {
+		return nil, err
+	}
+
 	mux.Route("/csm", func(csm chi.Router) {
 		// 공개 라우팅
 		csm.Mount("/login", route.LoginRoute(jwt, safeDb, timesheetDb, &r)) // 로그인
 		csm.Mount("/logout", route.LogoutRoute())                           // 로그아웃
 		csm.Mount("/jwt-validation", route.JwtVaildRoute(jwt))              // jwt 유효성 검사
-		//csm.Mount("/init", route.InitApiRoute(safeDb, timesheetDb, apiCfg, &r)) // api로 초기 세팅
+		//csm.Mount("/init", route.InitApiRoute(safeDb, timesheetDb, apiCfg, cfg, &r)) // api로 초기 세팅
 
 		// 인증 라우팅
 		csm.Group(func(router chi.Router) {
-			router.Use(handler.AuthMiddleware(jwt))                                     // jwt 인증
-			router.Mount("/menu", route.MenuRoute(safeDb, &r))                          // 메뉴
-			router.Mount("/user", route.UserRoute(safeDb, timesheetDb, &r))             // 사용자 {권한}
-			router.Mount("/api", route.ApiRoute(apiCfg, safeDb, &r))                    // api
-			router.Mount("/excel", route.ExcelRoute(safeDb, &r))                        // 엑셀
-			router.Mount("/project", route.ProjectRoute(safeDb, timesheetDb, &r))       // 프로젝트
-			router.Mount("/organization", route.OrganiztionRoute(timesheetDb, &r))      // 조직도
-			router.Mount("/site", route.SiteRoute(safeDb, timesheetDb, &r, apiCfg))     // 현장
-			router.Mount("/worker", route.WorkerRoute(safeDb, &r))                      // 근로자
-			router.Mount("/compare", route.CompareRoute(safeDb, &r))                    // 일일 근로자 비교
-			router.Mount("/deadline", route.DeadlineRoute(safeDb, &r))                  // 일일마감
-			router.Mount("/equip", route.EquipRoute(safeDb, &r))                        // 장비 (임시)
-			router.Mount("/device", route.DeviceRoute(safeDb, &r))                      // 근태인식기
-			router.Mount("/company", route.CompanyRoute(safeDb, timesheetDb, &r))       // 협력업체
-			router.Mount("/schedule", route.ScheduleRoute(safeDb, &r))                  // 일정관리
-			router.Mount("/notice", route.NoticeRoute(safeDb, &r))                      // 공지사항
-			router.Mount("/code", route.CodeRoute(safeDb, &r))                          // 코드
-			router.Mount("/project-setting", route.ProjectSettingRoute(safeDb, &r))     // 프로젝트 설정
-			router.Mount("/user-role", route.UserRoleRoute(safeDb, &r))                 // 사용자 권한
-			router.Mount("/system", route.SystemRoute(safeDb, timesheetDb, apiCfg, &r)) // 시스템관리
+			router.Use(handler.AuthMiddleware(jwt))                                          // jwt 인증
+			router.Mount("/menu", route.MenuRoute(safeDb, &r))                               // 메뉴
+			router.Mount("/user", route.UserRoute(safeDb, timesheetDb, &r))                  // 사용자 {권한}
+			router.Mount("/api", route.ApiRoute(apiCfg, safeDb, &r))                         // api
+			router.Mount("/excel", route.ExcelRoute(safeDb, &r))                             // 엑셀
+			router.Mount("/project", route.ProjectRoute(safeDb, timesheetDb, &r))            // 프로젝트
+			router.Mount("/organization", route.OrganiztionRoute(timesheetDb, &r))           // 조직도
+			router.Mount("/site", route.SiteRoute(safeDb, timesheetDb, &r, apiCfg))          // 현장
+			router.Mount("/worker", route.WorkerRoute(safeDb, cfg, &r))                      // 근로자
+			router.Mount("/compare", route.CompareRoute(safeDb, &r))                         // 일일 근로자 비교
+			router.Mount("/deadline", route.DeadlineRoute(safeDb, &r))                       // 일일마감
+			router.Mount("/equip", route.EquipRoute(safeDb, &r))                             // 장비 (임시)
+			router.Mount("/device", route.DeviceRoute(safeDb, &r))                           // 근태인식기
+			router.Mount("/company", route.CompanyRoute(safeDb, timesheetDb, &r))            // 협력업체
+			router.Mount("/schedule", route.ScheduleRoute(safeDb, &r))                       // 일정관리
+			router.Mount("/notice", route.NoticeRoute(safeDb, &r))                           // 공지사항
+			router.Mount("/code", route.CodeRoute(safeDb, &r))                               // 코드
+			router.Mount("/project-setting", route.ProjectSettingRoute(safeDb, &r))          // 프로젝트 설정
+			router.Mount("/user-role", route.UserRoleRoute(safeDb, &r))                      // 사용자 권한
+			router.Mount("/system", route.SystemRoute(safeDb, timesheetDb, apiCfg, cfg, &r)) // 시스템관리
 		})
 	})
 

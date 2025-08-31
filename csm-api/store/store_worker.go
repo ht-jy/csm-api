@@ -132,7 +132,7 @@ func (r *Repository) GetWorkerTotalList(ctx context.Context, db Queryer, page en
 							t1.REG_DATE,
 							t1.MOD_USER,
 							t1.MOD_DATE,
-							t1.REG_NO
+							COMMON.FUNC_DECODE(t1.REG_NO) AS REG_NO
 						FROM BASE t1
 						LEFT JOIN S_JOB_INFO t2 ON t1.JNO = t2.JNO
 						LEFT JOIN IRIS_SITE_SET t3 ON t1.SNO = t3.SNO
@@ -338,7 +338,7 @@ func (r *Repository) AddWorker(ctx context.Context, tx Execer, worker entity.Wor
 		SELECT
 			:1, :2, :3, :4, :5,
 			:6, REPLACE(:7, '-', ''), :8, :9, SYSDATE,
-			:10, :11, :12, :13, GET_IRIS_USER_UUID()
+			:10, :11, :12, COMMON.FUNC_ENCODE(:13), GET_IRIS_USER_UUID()
 		FROM DUAL
 		WHERE NOT EXISTS (
 			SELECT 1
@@ -346,7 +346,7 @@ func (r *Repository) AddWorker(ctx context.Context, tx Execer, worker entity.Wor
 			WHERE USER_ID = :14
 			  AND USER_NM = :15
 			  AND (
-				(REG_NO = :16) OR (REG_NO IS NULL AND :17 IS NULL)
+				(REG_NO = COMMON.FUNC_ENCODE(:16)) OR (REG_NO IS NULL AND :17 IS NULL)
 			  )
 			AND IS_DEL = 'N'
 		)`
@@ -388,7 +388,7 @@ func (r *Repository) ModifyWorker(ctx context.Context, tx Execer, worker entity.
 					R.MOD_USER         = :8,
 					R.MOD_UNO          = :9,
 					R.TRG_EDITABLE_YN  = 'N',
-					R.REG_NO           = :10,
+					R.REG_NO           = COMMON.FUNC_ENCODE(:10),
 					R.IS_MANAGE        = :11,
 					R.DISC_NAME        = :12
 				WHERE R.USER_KEY = :13
@@ -434,7 +434,7 @@ func (r *Repository) MergeWorker(ctx context.Context, tx Execer, worker entity.W
 					:1 AS SNO, -- 현장번호 
 					:2 AS JNO, -- 프로젝트번호
 					:3 AS USER_NM, -- 이름
-					:4 AS REG_NO, -- 주민번호
+					COMMON.FUNC_ENCODE(:4) AS REG_NO, -- 주민번호
 					:5 AS USER_ID, -- 아이디
 					:6 AS DEPARTMENT, -- 부서 / 조직명
 					:7 AS PHONE, -- 핸드폰번호
@@ -966,7 +966,7 @@ func (r *Repository) GetDailyWorkerUserKey(ctx context.Context, db Queryer, work
 		FROM IRIS_WORKER_SET
 		WHERE REPLACE(PHONE, '-', '') = :1
 		AND USER_NM = :2
-		AND SUBSTR(REG_NO, 1, 6) = :3
+		AND SUBSTR(COMMON.FUNC_DECODE(REG_NO), 1, 6) = :3
 		AND SNO = :4
 		AND JNO = :5`
 	if err := db.GetContext(ctx, &userKey, query, worker.Phone, worker.UserNm, worker.RegNo, worker.Sno, worker.Jno); err != nil {
@@ -1117,7 +1117,7 @@ func (r *Repository) GetRecdWorkerList(ctx context.Context, db Queryer) ([]entit
 			USER_NM, 
 			DEPARTMENT, 
 			DISC_NAME, 
-			REG_NO,
+			COMMON.FUNC_DECODE(REG_NO) AS REG_NO,
 			CASE 
 				WHEN INSTR(NVL(DEPARTMENT, ''), '하이테크') > 0 OR INSTR(NVL(UPPER(DEPARTMENT), ''), 'HTENC') > 0 THEN '01'
 				ELSE '00'
@@ -1147,7 +1147,7 @@ func (r *Repository) GetRecdWorkerUserKey(ctx context.Context, db Queryer, worke
 			WHERE USER_ID = :1 
 			AND USER_NM = :2
 			AND (
-				REG_NO = :3
+				COMMON.FUNC_DECODE(REG_NO) = :3
 				OR (REG_NO IS NULL AND :4 IS NULL)
 			) AND IS_DEL = 'N'
 			ORDER BY REG_DATE DESC
@@ -1185,7 +1185,7 @@ func (r *Repository) MergeRecdWorker(ctx context.Context, tx Execer, worker []en
 				:5 AS USER_NM,
 				:6 AS DEPARTMENT, 
 				:7 AS DISC_NAME, 
-				:8 AS REG_NO,
+				COMMON.FUNC_ENCODE(:8) AS REG_NO,
 				:9 AS WORKER_TYPE, 
 				:10 AS IS_MANAGE,
 				:11 AS MOD_AGENT,
@@ -1245,7 +1245,7 @@ func (r *Repository) GetRecdDailyWorkerList(ctx context.Context, db Queryer) ([]
 	var list []entity.WorkerDaily
 
 	query := `
-		SELECT IRIS_NO, DNO, SNO, JNO, USER_ID, USER_NM, REG_NO, RECOG_TIME AS RECORD_DATE
+		SELECT IRIS_NO, DNO, SNO, JNO, USER_ID, USER_NM, COMMON.FUNC_DECODE(REG_NO) AS REG_NO, RECOG_TIME AS RECORD_DATE
 		FROM IRIS_RECD_SET
 		WHERE IS_WORKER = 'Y'
 		AND IS_DAILY_WORKER = 'N'`

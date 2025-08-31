@@ -1,7 +1,13 @@
 package entity
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"encoding/base64"
+	"errors"
 	"github.com/guregu/null"
+	"io"
 )
 
 type Worker struct {
@@ -133,4 +139,56 @@ type WorkerReason struct {
 	ReasonType null.String `json:"reason_type" db:"REASON_TYPE"`
 	HisStatus  null.String `json:"his_status" db:"HIS_STATUS"`
 	HisName    null.String `json:"his_name" db:"HIS_NAME"`
+}
+
+func (c *Worker) Decode(encKey string, secretKey string) (string, error) {
+	key := []byte(secretKey)
+	ct, err := base64.StdEncoding.DecodeString(encKey)
+	if err != nil {
+		return "", err
+	}
+
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", err
+	}
+
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", err
+	}
+
+	nonceSize := gcm.NonceSize()
+	if len(ct) < nonceSize {
+		return "", errors.New("ciphertext too short")
+	}
+	nonce, data := ct[:nonceSize], ct[nonceSize:]
+
+	plain, err := gcm.Open(nil, nonce, data, nil)
+	if err != nil {
+		return "", err
+	}
+	return string(plain), nil
+}
+
+func (c *Worker) Encode(regNo string, secretKey string) (string, error) {
+	key := []byte(secretKey)
+
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", err
+	}
+
+	aesGCM, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", err
+	}
+
+	nonce := make([]byte, aesGCM.NonceSize())
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		return "", err
+	}
+
+	ciphertext := aesGCM.Seal(nonce, nonce, []byte(regNo), nil)
+	return base64.StdEncoding.EncodeToString(ciphertext), nil
 }

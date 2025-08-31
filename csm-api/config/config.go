@@ -15,6 +15,7 @@ type Config struct {
 	ErrLogPath     string `env:"ERR_LOG_PATH" envDefault:"logs/error"`
 	ExcelPath      string `env:"EXCEL_PATH" envDefault:"resources/excel"`
 	ConsoleLogPath string `env:"CONSOLE_LOG_PATH" envDefault:"logs/console"`
+	SecretKey      string `env:"SECRET_KEY" envDefault:"regno_secret_key"`
 }
 
 // caarlos0/env 패키지를 사용하여 struct의 envDefault값을 환경변수로 넘겨준다.
