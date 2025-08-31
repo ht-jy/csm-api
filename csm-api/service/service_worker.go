@@ -111,14 +111,6 @@ func (s *ServiceWorker) AddWorker(ctx context.Context, worker entity.Worker) (er
 		return utils.CustomErrorf(err)
 	}
 
-	// 주민등록번호 암호화
-	key := s.Config.SecretKey
-	rrn, err := worker.Encode(worker.Rrn.String, key)
-	if err != nil {
-		return utils.CustomErrorf(err)
-	}
-	worker.RegNo = utils.ParseNullString(rrn)
-
 	defer txutil.DeferTx(tx, &err)
 
 	var count int64

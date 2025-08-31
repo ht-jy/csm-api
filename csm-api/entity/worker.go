@@ -32,7 +32,6 @@ type Worker struct {
 	RetireDate  null.Time   `json:"retire_date" db:"RETIRE_DATE"`
 	RecordDate  null.String `json:"record_date" db:"RECORD_DATE"`
 	RegNo       null.String `json:"reg_no" db:"REG_NO"`
-	Rrn         null.String `json:"rrn" db:"RRN"`
 	FailReason  null.String `json:"fail_reason" db:"FAIL_REASON"`
 	WorkerReason
 	Base
@@ -53,7 +52,6 @@ type WorkerDaily struct {
 	DiscName        null.String `json:"disc_name" db:"DISC_NAME"` // 공종명
 	Phone           null.String `json:"phone" db:"PHONE"`
 	RegNo           null.String `json:"reg_no" db:"REG_NO"`
-	Rrn             null.String `json:"rrn" db:"RRN"`
 	RecordDate      null.Time   `json:"record_date" db:"RECORD_DATE"`
 	InRecogTime     null.Time   `json:"in_recog_time" db:"IN_RECOG_TIME"`   //출근시간
 	OutRecogTime    null.Time   `json:"out_recog_time" db:"OUT_RECOG_TIME"` //퇴근시간
