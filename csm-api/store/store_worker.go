@@ -106,6 +106,7 @@ func (r *Repository) GetWorkerTotalList(ctx context.Context, db Queryer, page en
 						sorted_data.IS_RETIRE,
 						sorted_data.RETIRE_DATE,
 						sorted_data.IS_MANAGE,
+						sorted_data.DAILY_REASON,
 						sorted_data.REG_USER,
 						sorted_data.REG_DATE,
 						sorted_data.MOD_USER,
@@ -128,6 +129,7 @@ func (r *Repository) GetWorkerTotalList(ctx context.Context, db Queryer, page en
 							t1.IS_RETIRE,
 							t1.RETIRE_DATE,
 							t1.IS_MANAGE,
+							t1.DAILY_REASON,
 							t1.REG_USER,
 							t1.REG_DATE,
 							t1.MOD_USER,
@@ -137,7 +139,7 @@ func (r *Repository) GetWorkerTotalList(ctx context.Context, db Queryer, page en
 						LEFT JOIN S_JOB_INFO t2 ON t1.JNO = t2.JNO
 						LEFT JOIN IRIS_SITE_SET t3 ON t1.SNO = t3.SNO
 						WHERE t1.SNO > 100
-						--AND T3.IS_USE = 'Y'
+						-- AND T3.IS_USE = 'Y'
 						%s %s
 						ORDER BY %s
 					) sorted_data
@@ -332,29 +334,29 @@ func (r *Repository) AddWorker(ctx context.Context, tx Execer, worker entity.Wor
 	insertQuery := `
 		INSERT INTO IRIS_WORKER_SET (
 			SNO, JNO, USER_ID, USER_NM, DEPARTMENT, 
-			DISC_NAME, PHONE, WORKER_TYPE, IS_RETIRE, REG_DATE, 
-			REG_AGENT, REG_USER, REG_UNO, REG_NO, USER_KEY
+			DISC_NAME, PHONE, WORKER_TYPE, IS_RETIRE, DAILY_REASON,
+		    REG_DATE, REG_AGENT, REG_USER, REG_UNO, REG_NO, USER_KEY
 		)
 		SELECT
 			:1, :2, :3, :4, :5,
-			:6, REPLACE(:7, '-', ''), :8, :9, SYSDATE,
-			:10, :11, :12, COMMON.FUNC_ENCODE(:13), GET_IRIS_USER_UUID()
+			:6, REPLACE(:7, '-', ''), :8, :9, :10,
+			SYSDATE, :11, :12, :13, COMMON.FUNC_ENCODE(:14), GET_IRIS_USER_UUID()
 		FROM DUAL
 		WHERE NOT EXISTS (
 			SELECT 1
 			FROM IRIS_WORKER_SET
-			WHERE USER_ID = :14
-			  AND USER_NM = :15
+			WHERE USER_ID = :15
+			  AND USER_NM = :16
 			  AND (
-				(REG_NO = COMMON.FUNC_ENCODE(:16)) OR (REG_NO IS NULL AND :17 IS NULL)
+				(REG_NO = COMMON.FUNC_ENCODE(:17)) OR (REG_NO IS NULL AND :18 IS NULL)
 			  )
 			AND IS_DEL = 'N'
 		)`
 
 	res, err := tx.ExecContext(ctx, insertQuery,
 		worker.Sno, worker.Jno, worker.UserId, worker.UserNm, worker.Department,
-		worker.DiscName, worker.Phone, worker.WorkerType, worker.IsRetire, /*, SYSDATE*/
-		agent, worker.RegUser, worker.RegUno, worker.RegNo,
+		worker.DiscName, worker.Phone, worker.WorkerType, worker.IsRetire, worker.DailyReason,
+		/*, SYSDATE*/ agent, worker.RegUser, worker.RegUno, worker.RegNo,
 		worker.UserId, worker.UserNm, worker.RegNo, worker.RegNo,
 	)
 	if err != nil {
@@ -383,15 +385,16 @@ func (r *Repository) ModifyWorker(ctx context.Context, tx Execer, worker entity.
 					R.WORKER_TYPE      = :4,
 					R.IS_RETIRE        = :5,
 					R.RETIRE_DATE      = :6,
+					R.DAILY_REASON     = :7,
 					R.MOD_DATE         = SYSDATE,
-					R.MOD_AGENT        = :7,
-					R.MOD_USER         = :8,
-					R.MOD_UNO          = :9,
+					R.MOD_AGENT        = :8,
+					R.MOD_USER         = :9,
+					R.MOD_UNO          = :10,
 					R.TRG_EDITABLE_YN  = 'N',
-					R.REG_NO           = COMMON.FUNC_ENCODE(:10),
-					R.IS_MANAGE        = :11,
-					R.DISC_NAME        = :12
-				WHERE R.USER_KEY = :13
+					R.REG_NO           = COMMON.FUNC_ENCODE(:11),
+					R.IS_MANAGE        = :12,
+					R.DISC_NAME        = :13
+				WHERE R.USER_KEY = :14
 				  AND EXISTS (
 						SELECT 1
 						FROM IRIS_SITE_JOB J
@@ -401,7 +404,7 @@ func (r *Repository) ModifyWorker(ctx context.Context, tx Execer, worker entity.
 
 	result, err := tx.ExecContext(ctx, query,
 		worker.UserNm, worker.Department, worker.Phone, worker.WorkerType, worker.IsRetire,
-		worker.RetireDate, agent, worker.ModUser, worker.ModUno, worker.RegNo,
+		worker.RetireDate, worker.DailyReason, agent, worker.ModUser, worker.ModUno, worker.RegNo,
 		worker.IsManage, worker.DiscName, worker.UserKey,
 	)
 
@@ -1115,17 +1118,22 @@ func (r *Repository) GetRecdWorkerList(ctx context.Context, db Queryer) ([]entit
 			JNO, 
 			USER_ID, 
 			USER_NM, 
-			DEPARTMENT, 
+			NVL(substr(TRIM(DEPARTMENT), 0, INSTR(TRIM(DEPARTMENT), ' ', -1)), DEPARTMENT) AS DEPARTMENT, 
 			DISC_NAME, 
 			COMMON.FUNC_DECODE(REG_NO) AS REG_NO,
 			CASE 
 				WHEN INSTR(NVL(DEPARTMENT, ''), '하이테크') > 0 OR INSTR(NVL(UPPER(DEPARTMENT), ''), 'HTENC') > 0 THEN '01'
+			    WHEN INSTR(NVL(DEPARTMENT, ''), '관리') > 0 OR INSTR(NVL(DISC_NAME, ''), '관리') > 0 THEN '02'
 				ELSE '00'
 			END AS WORKER_TYPE,
 			CASE 
 				WHEN INSTR(NVL(DEPARTMENT, ''), '관리') > 0 OR INSTR(NVL(DISC_NAME, ''), '관리') > 0 THEN 'Y'
 				ELSE 'N'
-			END AS IS_MANAGE
+			END AS IS_MANAGE,
+		    CASE 
+				WHEN INSTR(NVL(DEPARTMENT, ''), '퇴사') > 0 OR INSTR(NVL(DISC_NAME, ''), '퇴사') > 0 THEN 'Y'
+				ELSE 'N'
+			END AS IS_RETIRE
 		FROM IRIS_RECD_SET
 		WHERE IS_WORKER = 'N'`
 
@@ -1188,7 +1196,8 @@ func (r *Repository) MergeRecdWorker(ctx context.Context, tx Execer, worker []en
 				COMMON.FUNC_ENCODE(:8) AS REG_NO,
 				:9 AS WORKER_TYPE, 
 				:10 AS IS_MANAGE,
-				:11 AS MOD_AGENT,
+				:11 AS IS_RETIRE,
+				:12 AS MOD_AGENT,
 				0 AS MOD_UNO
 			FROM DUAL
 		) t2
@@ -1203,6 +1212,7 @@ func (r *Repository) MergeRecdWorker(ctx context.Context, tx Execer, worker []en
 				t1.DEPARTMENT = t2.DEPARTMENT, 
 				t1.WORKER_TYPE = t2.WORKER_TYPE,
 				t1.IS_MANAGE = t2.IS_MANAGE,
+				t1.IS_RETIRE = t2.IS_RETIRE,
 				t1.PHONE = t2.USER_ID, 
 				t1.DISC_NAME = t2.DISC_NAME,
 				t1.REG_NO = t2.REG_NO,
@@ -1210,15 +1220,15 @@ func (r *Repository) MergeRecdWorker(ctx context.Context, tx Execer, worker []en
 				t1.MOD_USER = 'TRG_IRIS_WORKER_SET',
 				t1.MOD_UNO = t2.MOD_UNO,
 				t1.MOD_AGENT = t2.MOD_AGENT
-			WHERE t1.TRG_EDITABLE_YN = 'Y'
+			WHERE (t1.TRG_EDITABLE_YN = 'Y' OR t1.TRG_EDITABLE_YN IS NULL)
 		WHEN NOT MATCHED THEN
 			INSERT (
 				USER_KEY, SNO, JNO, USER_ID, USER_NM,
-				DEPARTMENT, WORKER_TYPE, IS_MANAGE, DISC_NAME, REG_NO, 
+				DEPARTMENT, WORKER_TYPE, IS_MANAGE, IS_RETIRE, DISC_NAME, REG_NO, 
 				REG_DATE, REG_USER, REG_UNO, REG_AGENT
 			) VALUES (
 				t2.USER_KEY, t2.SNO, t2.JNO, t2.USER_ID, t2.USER_NM, 
-				t2.DEPARTMENT, t2.WORKER_TYPE, t2.IS_MANAGE, t2.DISC_NAME, t2.REG_NO, 
+				t2.DEPARTMENT, t2.WORKER_TYPE, t2.IS_MANAGE, t2.IS_RETIRE, t2.DISC_NAME, t2.REG_NO, 
 				SYSDATE, 'TRG_IRIS_WORKER_SET', t2.MOD_UNO, t2.MOD_AGENT
 			)`
 
@@ -1228,7 +1238,7 @@ func (r *Repository) MergeRecdWorker(ctx context.Context, tx Execer, worker []en
 		WHERE IRIS_NO = :1`
 
 	for _, w := range worker {
-		if _, err := tx.ExecContext(ctx, query, w.UserKey, w.Sno, w.Jno, w.UserId, w.UserNm, w.Department, w.DiscName, w.RegNo, w.WorkerType, w.IsManage, agent); err != nil {
+		if _, err := tx.ExecContext(ctx, query, w.UserKey, w.Sno, w.Jno, w.UserId, w.UserNm, w.Department, w.DiscName, w.RegNo, w.WorkerType, w.IsManage, w.IsRetire, agent); err != nil {
 			return utils.CustomErrorf(err)
 		}
 
