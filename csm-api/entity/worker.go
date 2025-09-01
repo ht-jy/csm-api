@@ -28,6 +28,7 @@ type Worker struct {
 	CodeNm      null.String `json:"code_nm" db:"CODE_NM"`
 	IsUse       null.String `json:"is_use" db:"IS_USE"`
 	IsRetire    null.String `json:"is_retire" db:"IS_RETIRE"`
+	DailyReason null.String `json:"daily_reason" db:"DAILY_REASON"` // 일용근로자 사유
 	IsManage    null.String `json:"is_manage" db:"IS_MANAGE"`
 	RetireDate  null.Time   `json:"retire_date" db:"RETIRE_DATE"`
 	RecordDate  null.String `json:"record_date" db:"RECORD_DATE"`
