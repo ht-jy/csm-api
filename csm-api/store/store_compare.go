@@ -14,6 +14,8 @@ func (r *Repository) GetDailyWorkerList(ctx context.Context, db Queryer, compare
 	var columns []string
 	columns = append(columns, "T2.USER_NM")
 	columns = append(columns, "T2.DEPARTMENT")
+	columns = append(columns, "T2.USER_ID")
+	columns = append(columns, "T3.DEVICE_NM")
 	retryCondition := utils.RetrySearchTextConvert(retry, columns)
 
 	var orderBy string
