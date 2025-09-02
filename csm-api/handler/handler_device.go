@@ -48,7 +48,6 @@ func (d *DeviceHandler) List(w http.ResponseWriter, r *http.Request) {
 	search.DeviceSn = utils.ParseNullString(r.URL.Query().Get("device_sn"))
 	search.SiteNm = utils.ParseNullString(r.URL.Query().Get("site_nm"))
 	search.Etc = utils.ParseNullString(r.URL.Query().Get("etc"))
-	search.IsUse = utils.ParseNullString(r.URL.Query().Get("is_use"))
 	retrySearchText := r.URL.Query().Get("retry_search_text")
 
 	// 근태인식기 목록

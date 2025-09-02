@@ -54,13 +54,7 @@ func (r *Repository) GetDeviceList(ctx context.Context, db Queryer, page entity.
 			condition += fmt.Sprintf(` AND LOWER(t1.ETC) LIKE LOWER('%%%s%%')`, trimEtc)
 		}
 	}
-	if search.IsUse.Valid {
-		trimIsUse := strings.TrimSpace(search.IsUse.String)
 
-		if trimIsUse != "" {
-			condition += fmt.Sprintf(` AND t1.IS_USE = UPPER('%s')`, trimIsUse)
-		}
-	}
 	var columns []string
 	columns = append(columns, "t2.SITE_NM")
 	columns = append(columns, "t1.DEVICE_SN")
@@ -98,7 +92,8 @@ func (r *Repository) GetDeviceList(ctx context.Context, db Queryer, page entity.
 							t1.SNO = t2.SNO
 						LEFT JOIN S_JOB_INFO T3 ON T3.JNO = t1.JNO
  						WHERE 
-							t1.SNO >= 100
+ 						    t1.IS_USE = 'Y' 
+ 						  AND t1.SNO >= 100
 							%s %s
 						ORDER BY %s
 					) sorted_data
@@ -148,13 +143,6 @@ func (r *Repository) GetDeviceListCount(ctx context.Context, db Queryer, search 
 			condition += fmt.Sprintf(` AND LOWER(t1.ETC) LIKE LOWER('%%%s%%')`, trimEtc)
 		}
 	}
-	if search.IsUse.Valid {
-		trimIsUse := strings.TrimSpace(search.IsUse.String)
-
-		if trimIsUse != "" {
-			condition += fmt.Sprintf(` AND t1.IS_USE = UPPER('%s')`, trimIsUse)
-		}
-	}
 
 	var columns []string
 	columns = append(columns, "t2.SITE_NM")
@@ -172,7 +160,8 @@ func (r *Repository) GetDeviceListCount(ctx context.Context, db Queryer, search 
 				ON 
 					t1.SNO = t2.SNO
 				WHERE 
-					t1.SNO >= 100
+					t1.IS_USE = 'Y' 
+				  	AND t1.SNO >= 100
 					%s %s`, condition, retryCondition)
 
 	if err := db.GetContext(ctx, &count, query); err != nil {
@@ -209,12 +198,12 @@ func (r *Repository) AddDevice(ctx context.Context, tx Execer, device entity.Dev
 				    :3,
 				    :4,
 				    :5,
-				    :6,
+				    'Y',
 				    SYSDATE,
-				    :7,
-				    :8    
+				    :6,
+				    :7    
 				)`
-	if _, err := tx.ExecContext(ctx, query, device.Sno, device.DeviceSn, device.DeviceNm, device.Jno, device.Etc, device.IsUse, agent, device.RegUser); err != nil {
+	if _, err := tx.ExecContext(ctx, query, device.Sno, device.DeviceSn, device.DeviceNm, device.Jno, device.Etc, agent, device.RegUser); err != nil {
 		return utils.CustomErrorf(err)
 	}
 
@@ -234,14 +223,13 @@ func (r *Repository) ModifyDevice(ctx context.Context, tx Execer, device entity.
 					DEVICE_SN = :2, 
 					DEVICE_NM = :3, 
 					ETC = :4, 
-					IS_USE = :5, 
 					MOD_DATE = SYSDATE,
-					MOD_USER = :6,
-					MOD_AGENT = :7, 
-					JNO = :8
-				WHERE DNO = :9`
+					MOD_USER = :5,
+					MOD_AGENT = :6, 
+					JNO = :7
+				WHERE DNO = :8`
 
-	if _, err := tx.ExecContext(ctx, query, device.Sno, device.DeviceSn, device.DeviceNm, device.Etc, device.IsUse, device.ModUser, agent, device.Jno, device.Dno); err != nil {
+	if _, err := tx.ExecContext(ctx, query, device.Sno, device.DeviceSn, device.DeviceNm, device.Etc, device.ModUser, agent, device.Jno, device.Dno); err != nil {
 		return utils.CustomErrorf(err)
 	}
 	return nil
@@ -251,7 +239,13 @@ func (r *Repository) ModifyDevice(ctx context.Context, tx Execer, device entity.
 // @param
 // - dno sql.NullInt64: 홍채인식기 고유번호
 func (r *Repository) RemoveDevice(ctx context.Context, tx Execer, dno sql.NullInt64) error {
-	query := `DELETE FROM IRIS_DEVICE_SET WHERE DNO = :1`
+	query := `
+			UPDATE IRIS_DEVICE_SET
+			SET 
+				IS_USE = 'N'
+			WHERE
+			    DNO = :1
+			`
 
 	if _, err := tx.ExecContext(ctx, query, dno); err != nil {
 		return utils.CustomErrorf(err)
