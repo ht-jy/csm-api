@@ -21,6 +21,7 @@ type SiteService interface {
 	GetSiteNmCount(ctx context.Context, search entity.Site, nonSite int) (int, error)
 	GetSiteStatsList(ctx context.Context, targetDate time.Time) (*entity.Sites, error)
 	ModifySite(ctx context.Context, site entity.Site) error
+	DeleteSite(ctx context.Context, sno int64) error
 	AddSite(ctx context.Context, jno int64, user entity.User) error
 	ModifySiteIsNonUse(ctx context.Context, site entity.ReqSite) error
 	ModifySiteIsUse(ctx context.Context, site entity.ReqSite) error

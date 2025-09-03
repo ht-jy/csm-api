@@ -105,7 +105,7 @@ func (s *ServiceSite) GetSiteList(ctx context.Context, targetDate time.Time, isR
 
 		sno := site.Sno.Int64
 		var projectCnt int64 = 0
-		var sumWorkRate int64 = 0
+		var sumWorkRate float64 = 0
 
 		// 프로젝트 리스트 조회
 		projectInfos, err := s.ProjectService.GetProjectList(ctx, sno, targetDate)
@@ -117,7 +117,7 @@ func (s *ServiceSite) GetSiteList(ctx context.Context, targetDate time.Time, isR
 		for _, projectInfo := range *site.ProjectList {
 			// 공정률 더하기
 			projectCnt++
-			sumWorkRate += projectInfo.WorkRate.Int64
+			sumWorkRate += projectInfo.WorkRate.Float64
 
 			if &projectInfo.Jno != nil {
 				// 작업내용
@@ -133,7 +133,10 @@ func (s *ServiceSite) GetSiteList(ctx context.Context, targetDate time.Time, isR
 		}
 
 		// 공정률
-		site.WorkRate = null.NewFloat(float64(sumWorkRate)/float64(projectCnt), true)
+
+		resultWorkRate := utils.RoundTo(sumWorkRate/float64(projectCnt), 2)
+ 		
+		site.WorkRate = null.NewFloat(resultWorkRate, true)
 
 		// 현장 위치 조회
 		sitePos, err := s.SitePosStore.GetSitePosData(ctx, s.SafeDB, sno)
@@ -320,6 +323,33 @@ func (s *ServiceSite) ModifySite(ctx context.Context, site entity.Site) (err err
 	}
 
 	return
+
+}
+
+// func: 현장 삭제
+// @param
+// -
+func (s *ServiceSite) DeleteSite(ctx context.Context, sno int64) error {
+
+	strUno, _ := auth.GetContext(ctx, auth.Uno{})
+	uno, _ := strconv.ParseInt(strUno, 10, 64)
+	userName, _ := auth.GetContext(ctx, auth.UserName{})
+
+	user := entity.User{}.SetUser(uno, userName)
+
+	tx, err := txutil.BeginTxWithMode(ctx, s.SafeTDB, false)
+	if err != nil {
+		return utils.CustomErrorf(err)
+	}
+
+	defer txutil.DeferTx(tx, &err)
+
+	err = s.Store.DeleteSite(ctx, tx, sno, user)
+	if err != nil {
+		return utils.CustomErrorf(err)
+	}
+
+	return nil
 
 }
 

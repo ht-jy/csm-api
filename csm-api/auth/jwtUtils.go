@@ -49,6 +49,7 @@ type JWTClaims struct {
 type UserId struct{}
 type Role struct{}
 type Uno struct{}
+type UserName struct{}
 
 // JWTUtils 구조체 생성
 func JwtNew(c clock.Clocker) (*JWTUtils, error) {
@@ -176,6 +177,7 @@ func (j *JWTUtils) FillContext(r *http.Request) (*http.Request, *JWTClaims, erro
 	ctx := SetContext(r.Context(), UserId{}, claims.UserId)
 	ctx = SetContext(ctx, Role{}, string(claims.Role))
 	ctx = SetContext(ctx, Uno{}, strconv.FormatInt(claims.Uno, 10))
+	ctx = SetContext(ctx, UserName{}, claims.UserName)
 
 	httpRequestClone := r.Clone(ctx)
 

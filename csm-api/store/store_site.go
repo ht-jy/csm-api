@@ -226,6 +226,45 @@ func (r *Repository) ModifySite(ctx context.Context, tx Execer, site entity.Site
 	return nil
 }
 
+// func: 현장 삭제
+// @param
+// -
+func (r *Repository) DeleteSite(ctx context.Context, tx Execer, sno int64, user entity.User) error {
+
+	// IRIS_SITE_SET 사용 안함 표시
+	siteSetQuery := `
+			UPDATE IRIS_SITE_SET 
+			SET
+				IS_USE = 'N',
+				MOD_DATE = SYSDATE,
+				MOD_AGENT = :1,
+				MOD_USER = :2,
+				MOD_UNO = :3
+			WHERE
+			    SNO = :4
+			`
+	if _, err := tx.ExecContext(ctx, siteSetQuery, user.Agent, user.UserName, user.Uno, sno); err != nil {
+		return utils.CustomErrorf(err)
+	}
+
+	// IRIS_SITE_JOB 사용 안함 표시
+	siteJobQuery := `
+			UPDATE IRIS_SITE_JOB 
+			SET
+				IS_USE = 'N',
+				MOD_DATE = SYSDATE,
+				MOD_AGENT = :1,
+				MOD_USER = :2,
+				MOD_UNO = :3
+			WHERE
+			    SNO = :4
+			`
+	if _, err := tx.ExecContext(ctx, siteJobQuery, user.Agent, user.UserName, user.Uno, sno); err != nil {
+		return utils.CustomErrorf(err)
+	}
+	return nil
+}
+
 // func: 현장 생성
 // @param
 // -
@@ -240,7 +279,7 @@ func (r *Repository) AddSite(ctx context.Context, db Queryer, tx Execer, jno int
 			) 
 			SELECT 
 				SEQ_IRIS_SITE_SET.NEXTVAL,
-				JOB_NAME, JOB_LOC, JOB_LOC_NAME, 'Y', 'Y'
+				JOB_NAME, JOB_LOC, JOB_LOC_NAME, 'Y', 'Y',
 				SYSDATE, :1, :2, :3
 			FROM s_job_info 
 			WHERE JNO = :4`
@@ -255,7 +294,7 @@ func (r *Repository) AddSite(ctx context.Context, db Queryer, tx Execer, jno int
 				JNO, IS_USE, STATUS, IS_DEFAULT, REG_DATE,
 				REG_AGENT, REG_USER, REG_UNO
 			) VALUES (
-				(SELECT SNO FROM IRIS_SITE_SET S INNER JOIN (SELECT * FROM S_JOB_INFO WHERE JNO = :1) J ON S.SITE_NM = J.JOB_NAME),
+				(SELECT SNO FROM IRIS_SITE_SET S INNER JOIN (SELECT * FROM S_JOB_INFO WHERE JNO = :1) J ON S.SITE_NM = J.JOB_NAME AND S.IS_USE = 'Y'),
 			    :2, 'Y', 'Y', 'Y', SYSDATE,
 				:3, :4, :5
 			)`
@@ -271,7 +310,7 @@ func (r *Repository) AddSite(ctx context.Context, db Queryer, tx Execer, jno int
 				REG_AGENT, REG_USER, REG_UNO
 			)
 			SELECT
-				(SELECT SNO FROM IRIS_SITE_SET S INNER JOIN (SELECT * FROM S_JOB_INFO WHERE JNO = :1) J ON S.SITE_NM = J.JOB_NAME)
+				(SELECT SNO FROM IRIS_SITE_SET S INNER JOIN (SELECT * FROM S_JOB_INFO WHERE JNO = :1) J ON S.SITE_NM = J.JOB_NAME AND S.IS_USE = 'Y')
 				,TO_DATE(JOB_SD, 'YYYY-MM-DD'), TO_DATE(JOB_ED, 'YYYY-MM-DD'), 'Y', SYSDATE,
 				:2, :3, :4
 			FROM s_job_info
@@ -397,7 +436,7 @@ func (r *Repository) ModifyWorkRate(ctx context.Context, tx Execer, workRate ent
 // 날짜별 공정률 조회
 func (r *Repository) GetSiteWorkRateByDate(ctx context.Context, db Queryer, jno int64, searchDate string) (entity.SiteWorkRate, error) {
 	workRate := entity.SiteWorkRate{
-		WorkRate:   utils.ParseNullInt("0"),
+		WorkRate:   utils.ParseNullFloat("0"),
 		IsWorkRate: utils.ParseNullString("N"),
 	}
 

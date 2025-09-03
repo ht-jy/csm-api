@@ -863,6 +863,7 @@ func (r *Repository) GetNonUsedProjectList(ctx context.Context, db Queryer, page
 										AND t1.JNO NOT IN(
 											SELECT JNO
 											FROM IRIS_SITE_JOB
+											WHERE IS_USE = 'Y'
 										)
 										%s %s
 										ORDER BY %s 
@@ -909,6 +910,7 @@ func (r *Repository) GetNonUsedProjectCount(ctx context.Context, db Queryer, sea
 								AND t1.JNO NOT IN(
 									SELECT JNO
 									FROM IRIS_SITE_JOB
+									WHERE IS_USE = 'Y'
 								)
 								%s %s`, condition, retryCondition)
 
@@ -1027,6 +1029,7 @@ func (r *Repository) GetNonUsedProjectCountByType(ctx context.Context, db Querye
 								AND t1.JNO NOT IN(
 									SELECT JNO
 									FROM IRIS_SITE_JOB
+									WHERE IS_USE = 'Y'
 								) AND REGEXP_LIKE(job_no, '^[^-]+-[^ -]*[%s][^ -]*-[^-]+-[^-]+$')
 								%s %s`, typeString, condition, retryCondition)
 

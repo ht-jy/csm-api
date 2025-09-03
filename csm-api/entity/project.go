@@ -46,7 +46,7 @@ type ProjectInfo struct {
 	WorkerCountManager    null.Int    `json:"worker_count_manager" db:"WORKER_COUNT_MANAGER"`
 	WorkerCountNotManager null.Int    `json:"worker_count_not_manager" db:"WORKER_COUNT_NOT_MANAGER"`
 	EquipCount            null.Int    `json:"equip_count" db:"EQUIP_COUNT"`
-	WorkRate              null.Int    `json:"work_rate" db:"WORK_RATE"`
+	WorkRate              null.Float  `json:"work_rate" db:"WORK_RATE"`
 	IsWorkRate            null.String `json:"is_work_rate" db:"IS_WORK_RATE"`
 	CancelDay             null.Int    `json:"cancel_day" db:"CANCEL_DAY"`
 	Base
@@ -88,6 +88,6 @@ type ReqProject struct {
 	Jno       null.Int    `json:"jno" db:"JNO"`
 	IsUsed    null.String `json:"is_used" db:"IS_USED"`
 	IsDefault null.String `json:"is_default" db:"IS_DEFAULT"`
-	WorkRate  null.Int    `json:"work_rate" db:"WORK_RATE"`
+	WorkRate  null.Float  `json:"work_rate" db:"WORK_RATE"`
 	Base
 }

@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"math"
 	"regexp"
 	"strconv"
 	"strings"
@@ -68,4 +69,10 @@ func NormalizeBool(s string) bool {
 	lower := strings.ToLower(reg.ReplaceAllString(strings.TrimSpace(s), ""))
 	result, _ := strconv.ParseBool(lower)
 	return result
+}
+
+// 소수점 n자리 반올림 (n자리까지 표기)
+func RoundTo(x float64, n int) float64 {
+	pow := math.Pow10(n) // 10^n
+	return math.Round(x*pow) / pow
 }
