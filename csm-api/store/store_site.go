@@ -436,7 +436,7 @@ func (r *Repository) ModifyWorkRate(ctx context.Context, tx Execer, workRate ent
 // 날짜별 공정률 조회
 func (r *Repository) GetSiteWorkRateByDate(ctx context.Context, db Queryer, jno int64, searchDate string) (entity.SiteWorkRate, error) {
 	workRate := entity.SiteWorkRate{
-		WorkRate:   utils.ParseNullInt("0"),
+		WorkRate:   utils.ParseNullFloat("0"),
 		IsWorkRate: utils.ParseNullString("N"),
 	}
 
