@@ -323,6 +323,33 @@ func (s *ServiceSite) ModifySite(ctx context.Context, site entity.Site) (err err
 
 }
 
+// func: 현장 삭제
+// @param
+// -
+func (s *ServiceSite) DeleteSite(ctx context.Context, sno int64) error {
+
+	strUno, _ := auth.GetContext(ctx, auth.Uno{})
+	uno, _ := strconv.ParseInt(strUno, 10, 64)
+	userName, _ := auth.GetContext(ctx, auth.UserName{})
+
+	user := entity.User{}.SetUser(uno, userName)
+
+	tx, err := txutil.BeginTxWithMode(ctx, s.SafeTDB, false)
+	if err != nil {
+		return utils.CustomErrorf(err)
+	}
+
+	defer txutil.DeferTx(tx, &err)
+
+	err = s.Store.DeleteSite(ctx, tx, sno, user)
+	if err != nil {
+		return utils.CustomErrorf(err)
+	}
+
+	return nil
+
+}
+
 // func: 현장 생성
 // @param
 // -

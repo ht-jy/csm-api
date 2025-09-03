@@ -56,6 +56,7 @@ func SiteRoute(safeDB *sqlx.DB, timeSheetDB *sqlx.DB, r *store.Repository, apiCo
 	router.Get("/stats", siteHandler.StatsList)                            // 현장상태조회
 	router.Post("/", siteHandler.Add)                                      // 현장 생성
 	router.Put("/", siteHandler.Modify)                                    // 수정
+	router.Delete("/{sno}", siteHandler.Delete)                            // 현장 삭제
 	router.Put("/non-use", siteHandler.ModifyNonUse)                       // 현장 사용안함
 	router.Put("/use", siteHandler.ModifyUse)                              // 현장 사용
 	router.Put("/non-use/job", siteHandler.ModifySiteJobNonUse)            // 현장 프로젝트 사용안함

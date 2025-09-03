@@ -26,6 +26,7 @@ type SiteStore interface {
 	GetSiteNmCount(ctx context.Context, db Queryer, search entity.Site, nonSite int) (int, error)
 	GetSiteStatsList(ctx context.Context, db Queryer, targetDate time.Time) (*entity.Sites, error)
 	ModifySite(ctx context.Context, tx Execer, site entity.Site) error
+	DeleteSite(ctx context.Context, tx Execer, sno int64, user entity.User) error
 	AddSite(ctx context.Context, db Queryer, tx Execer, jno int64, user entity.User) error
 	ModifySiteIsNonUse(ctx context.Context, tx Execer, site entity.ReqSite) error
 	ModifySiteIsUse(ctx context.Context, tx Execer, site entity.ReqSite) error

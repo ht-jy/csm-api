@@ -106,6 +106,32 @@ func (s *HandlerSite) Modify(w http.ResponseWriter, r *http.Request) {
 	SuccessResponse(ctx, w)
 }
 
+// func: 현장 관리 삭제
+// @param
+// -
+func (s *HandlerSite) Delete(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	snoStr := r.PathValue("sno")
+	if snoStr == "" {
+		BadRequestResponse(ctx, w)
+		return
+	}
+
+	sno, err := strconv.ParseInt(snoStr, 10, 64)
+	if err != nil {
+		FailResponse(ctx, w, err)
+		return
+	}
+
+	if err = s.Service.DeleteSite(ctx, sno); err != nil {
+		FailResponse(ctx, w, err)
+		return
+	}
+
+	SuccessResponse(ctx, w)
+}
+
 // func: 현장명 조회
 // @param
 // -
