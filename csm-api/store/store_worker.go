@@ -457,8 +457,7 @@ func (r *Repository) MergeWorker(ctx context.Context, tx Execer, worker entity.W
 			LEFT JOIN 
 				IRIS_WORKER_SET ws
 			ON
-				w.USER_ID = ws.USER_ID 
-				AND ws.USER_ID = w.USER_ID
+				w.USER_ID = ws.USER_ID
 				AND ws.USER_NM = w.USER_NM
 				AND (
 					(ws.REG_NO = w.REG_NO) OR (ws.REG_NO IS NULL AND ws.REG_NO IS NULL)
@@ -471,6 +470,7 @@ func (r *Repository) MergeWorker(ctx context.Context, tx Execer, worker entity.W
 			UPDATE SET 
 				W1.SNO = W2.SNO, 
 				W1.JNO = W2.JNO,
+				W1.REG_NO = W2.REG_NO,
 				W1.DEPARTMENT = W2.DEPARTMENT,
 				W1.PHONE = W2.PHONE, 
 				W1.DISC_NAME = W2.DISC_NAME,

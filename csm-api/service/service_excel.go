@@ -128,6 +128,7 @@ func (s *ServiceExcel) ImportDeduction(ctx context.Context, path string, deducti
 	}
 	file.UploadRound = utils.ParseNullInt(strconv.Itoa(uploadRound))
 
+	// jno로 siteNm가져오기
 	siteNm, err := s.Store.GetDeductionJobNameByJno(ctx, s.SafeDB, deduction.Jno.Int64)
 	if err != nil {
 		return utils.CustomErrorf(err)
@@ -151,7 +152,8 @@ func (s *ServiceExcel) ImportDeduction(ctx context.Context, path string, deducti
 
 		// C열(현장명)
 		siteName, _ := f.GetCellValue(sheetName, fmt.Sprintf("C%d", rowIdx))
-		if utils.NormalizeForEqual(siteName) != utils.NormalizeForEqual(siteNm) {
+		// 엑셀에 담긴 현장명에 project이름 포함되어 있으면 업로드 되도록 했음.
+		if !strings.Contains(utils.NormalizeForEqual(siteName), strings.TrimSpace(utils.NormalizeForEqual(siteNm))) {
 			continue
 		}
 
