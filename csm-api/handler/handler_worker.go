@@ -28,6 +28,14 @@ type HandlerWorker struct {
 func (h *HandlerWorker) TotalList(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
+	// 전체 조회할지 본인이 속한 프로젝트만 조회할지 권한
+	isRoleStr := r.URL.Query().Get("isRole")
+	isRole, err := strconv.ParseBool(isRoleStr)
+	if err != nil {
+		BadRequestResponse(ctx, w)
+		return
+	}
+
 	// http get paramter를 저장할 구조체 생성 및 파싱
 	page := entity.Page{}
 	search := entity.Worker{}
@@ -64,14 +72,14 @@ func (h *HandlerWorker) TotalList(w http.ResponseWriter, r *http.Request) {
 	search.DiscName = utils.ParseNullString(discName)
 
 	// 조회
-	list, err := h.Service.GetWorkerTotalList(ctx, page, search, retrySearch)
+	list, err := h.Service.GetWorkerTotalList(ctx, page, isRole, search, retrySearch)
 	if err != nil {
 		FailResponse(ctx, w, err)
 		return
 	}
 
 	// 개수 조회
-	count, err := h.Service.GetWorkerTotalCount(ctx, search, retrySearch)
+	count, err := h.Service.GetWorkerTotalCount(ctx, isRole, search, retrySearch)
 	if err != nil {
 		FailResponse(ctx, w, err)
 		return

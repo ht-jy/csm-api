@@ -23,10 +23,20 @@ import (
 // func: 전체 근로자 조회
 // @param
 // - page entity.PageSql: 정렬, 리스트 수
+// - isRole bool : 전체프로젝트 조회 bool(true: 전체프로젝트, false: 본인이 속한 프로젝트)
+// - uno string : uno를 string으로 받아 쿼리에 바로 넣음.
 // - search entity.WorkerSql: 검색 단어
 // - retry string: 통합검색 텍스트
-func (r *Repository) GetWorkerTotalList(ctx context.Context, db Queryer, page entity.PageSql, search entity.Worker, retry string) (*entity.Workers, error) {
+func (r *Repository) GetWorkerTotalList(ctx context.Context, db Queryer, page entity.PageSql, isRole bool, uno string, search entity.Worker, retry string) (*entity.Workers, error) {
 	workers := entity.Workers{}
+
+	// 역할 조건
+	roleCondition := ""
+	if isRole {
+		roleCondition = "AND 1 = 1"
+	} else {
+		roleCondition = fmt.Sprintf("AND UNO = %s", uno)
+	}
 
 	condition := ""
 	condition = utils.StringWhereConvert(condition, search.JobName.NullString, "t2.JOB_NAME")
@@ -57,7 +67,15 @@ func (r *Repository) GetWorkerTotalList(ctx context.Context, db Queryer, page en
 	}
 
 	query := fmt.Sprintf(`
-				WITH LATEST_DAILY AS (
+				WITH USER_IN_SNO AS (
+					SELECT SNO
+					FROM S_JOB_MEMBER_LIST M, IRIS_SITE_JOB J 
+					WHERE 
+						J.JNO = M.JNO(+)
+						AND M.JNO IS NOT NULL
+						%s
+				),
+				LATEST_DAILY AS (
 					SELECT SNO, USER_KEY, MOD_DATE, REG_DATE
 					FROM (
 						SELECT
@@ -135,18 +153,19 @@ func (r *Repository) GetWorkerTotalList(ctx context.Context, db Queryer, page en
 							t1.MOD_USER,
 							t1.MOD_DATE,
 							COMMON.FUNC_DECODE(t1.REG_NO) AS REG_NO
-						FROM BASE t1
-						LEFT JOIN S_JOB_INFO t2 ON t1.JNO = t2.JNO
-						LEFT JOIN IRIS_SITE_SET t3 ON t1.SNO = t3.SNO
-						WHERE t1.SNO > 100
-						-- AND T3.IS_USE = 'Y'
+						FROM BASE t1, S_JOB_INFO t2, IRIS_SITE_SET t3, USER_IN_SNO t4
+						WHERE
+							t1.JNO = t2.JNO(+)
+							AND t1.SNO = t3.SNO(+)
+							AND t3.SNO = t4.SNO
+							AND t1.SNO > 100
 						%s %s
 						ORDER BY %s
 					) sorted_data
 					WHERE ROWNUM <= :1
 					ORDER BY RNUM %s
 				)
-				WHERE RNUM > :2`, condition, retryCondition, order, page.RnumOrder)
+				WHERE RNUM > :2`, roleCondition, condition, retryCondition, order, page.RnumOrder)
 
 	if err := db.SelectContext(ctx, &workers, query, page.EndNum, page.StartNum); err != nil {
 		return nil, utils.CustomErrorf(err)
@@ -157,10 +176,19 @@ func (r *Repository) GetWorkerTotalList(ctx context.Context, db Queryer, page en
 
 // func: 전체 근로자 개수 조회
 // @param
+// - isRole bool : 전체프로젝트 조회 bool(true: 전체프로젝트, false: 본인이 속한 프로젝트)
+// - uno string : uno를 string으로 받아 쿼리에 바로 넣음.
 // - searchTime string: 조회 날짜
 // - retry string: 통합검색 텍스트
-func (r *Repository) GetWorkerTotalCount(ctx context.Context, db Queryer, search entity.Worker, retry string) (int, error) {
+func (r *Repository) GetWorkerTotalCount(ctx context.Context, db Queryer, isRole bool, uno string, search entity.Worker, retry string) (int, error) {
 	var count int
+
+	roleCondition := ""
+	if isRole {
+		roleCondition = "AND 1 = 1"
+	} else {
+		roleCondition = fmt.Sprintf("AND UNO = %s", uno)
+	}
 
 	condition := ""
 	condition = utils.StringWhereConvert(condition, search.JobName.NullString, "t2.JOB_NAME")
@@ -177,7 +205,15 @@ func (r *Repository) GetWorkerTotalCount(ctx context.Context, db Queryer, search
 	retryCondition := utils.RetrySearchTextConvert(retry, columns)
 
 	query := fmt.Sprintf(`
-						WITH LATEST_DAILY AS (
+						WITH USER_IN_SNO AS (
+							SELECT SNO
+							FROM S_JOB_MEMBER_LIST M, IRIS_SITE_JOB J 
+							WHERE 
+								J.JNO = M.JNO(+)
+								AND M.JNO IS NOT NULL
+								%s
+						),
+						LATEST_DAILY AS (
 							SELECT SNO, USER_KEY, MOD_DATE, REG_DATE
 							FROM (
 								SELECT
@@ -209,12 +245,14 @@ func (r *Repository) GetWorkerTotalCount(ctx context.Context, db Queryer, search
 						)
 						SELECT 
 							COUNT(*)
-						FROM BASE t1
-						LEFT JOIN S_JOB_INFO t2 ON t1.JNO = t2.JNO
-						LEFT JOIN IRIS_SITE_SET t3 ON t1.SNO = t3.SNO
-						WHERE t1.SNO > 100
+						FROM BASE t1, S_JOB_INFO t2, IRIS_SITE_SET t3, USER_IN_SNO t4
+						WHERE
+							t1.JNO = t2.JNO(+)
+							AND t1.SNO = t3.SNO(+)
+							AND t3.SNO = t4.SNO
+							AND t1.SNO > 100
 						--AND t3.IS_USE = 'Y'
-						%s %s`, condition, retryCondition)
+						%s %s`, roleCondition, condition, retryCondition)
 
 	if err := db.GetContext(ctx, &count, query); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

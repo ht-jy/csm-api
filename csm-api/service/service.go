@@ -122,8 +122,8 @@ type DeviceService interface {
 }
 
 type WorkerService interface {
-	GetWorkerTotalList(ctx context.Context, page entity.Page, search entity.Worker, retry string) (*entity.Workers, error)
-	GetWorkerTotalCount(ctx context.Context, search entity.Worker, retry string) (int, error)
+	GetWorkerTotalList(ctx context.Context, page entity.Page, isRole bool, search entity.Worker, retry string) (*entity.Workers, error)
+	GetWorkerTotalCount(ctx context.Context, isRole bool, search entity.Worker, retry string) (int, error)
 	GetAbsentWorkerList(ctx context.Context, page entity.Page, search entity.WorkerDaily, retry string) (*entity.Workers, error)
 	GetAbsentWorkerCount(ctx context.Context, search entity.WorkerDaily, retry string) (int, error)
 	GetWorkerDepartList(ctx context.Context, jno int64) ([]string, error)
