@@ -47,7 +47,7 @@ func (r *Repository) GetDailyWorkerList(ctx context.Context, db Queryer, compare
 			T2.USER_ID,
 			T2.USER_NM,
 			T2.PHONE,
-			T2.REG_NO,
+			COMMON.FUNC_DECODE(T2.REG_NO) AS REG_NO,
 			CASE
 				WHEN INSTR(T2.DEPARTMENT, ' ', -1) > 0 THEN SUBSTR(T2.DEPARTMENT, 1, INSTR(T2.DEPARTMENT, ' ', -1) - 1)
 				ELSE T2.DEPARTMENT
