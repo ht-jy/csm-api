@@ -83,7 +83,7 @@ type OrganizationService interface {
 }
 
 type ProjectDailyService interface {
-	GetDailyJobList(ctx context.Context, jno int64, targetDate string) (entity.ProjectDailys, error)
+	GetDailyJobList(ctx context.Context, isRole bool, jno int64, targetDate string) (entity.ProjectDailys, error)
 	AddDailyJob(ctx context.Context, project entity.ProjectDailys) error
 	ModifyDailyJob(ctx context.Context, project entity.ProjectDaily) error
 	RemoveDailyJob(ctx context.Context, idx int64) error
@@ -185,7 +185,7 @@ type EquipService interface {
 }
 
 type ScheduleService interface {
-	GetRestScheduleList(ctx context.Context, jno int64, year string, month string) (entity.RestSchedules, error)
+	GetRestScheduleList(ctx context.Context, isRole bool, jno int64, year string, month string) (entity.RestSchedules, error)
 	AddRestSchedule(ctx context.Context, schedule entity.RestSchedules) error
 	ModifyRestSchedule(ctx context.Context, schedule entity.RestSchedule) error
 	RemoveRestSchedule(ctx context.Context, cno int64) error

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"csm-api/auth"
 	"csm-api/entity"
 	"csm-api/store"
 	"csm-api/txutil"
@@ -17,8 +18,11 @@ type ServiceSchedule struct {
 // func: 휴무일 조회
 // @param
 // -
-func (s *ServiceSchedule) GetRestScheduleList(ctx context.Context, jno int64, year string, month string) (entity.RestSchedules, error) {
-	list, err := s.Store.GetRestScheduleList(ctx, s.SafeDB, jno, year, month)
+func (s *ServiceSchedule) GetRestScheduleList(ctx context.Context, isRole bool, jno int64, year string, month string) (entity.RestSchedules, error) {
+
+	uno, _ := auth.GetContext(ctx, auth.Uno{})
+
+	list, err := s.Store.GetRestScheduleList(ctx, s.SafeDB, isRole, jno, uno, year, month)
 	if err != nil {
 		return entity.RestSchedules{}, utils.CustomErrorf(err)
 	}

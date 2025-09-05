@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"csm-api/auth"
 	"csm-api/entity"
 	"csm-api/store"
 	"csm-api/txutil"
@@ -15,8 +16,11 @@ type ServiceProjectDaily struct {
 }
 
 // 작업내용 조회
-func (s *ServiceProjectDaily) GetDailyJobList(ctx context.Context, jno int64, targetDate string) (entity.ProjectDailys, error) {
-	list, err := s.Store.GetDailyJobList(ctx, s.SafeDB, jno, targetDate)
+func (s *ServiceProjectDaily) GetDailyJobList(ctx context.Context, isRole bool, jno int64, targetDate string) (entity.ProjectDailys, error) {
+
+	uno, _ := auth.GetContext(ctx, auth.Uno{})
+
+	list, err := s.Store.GetDailyJobList(ctx, s.SafeDB, isRole, jno, uno, targetDate)
 	if err != nil {
 		return nil, utils.CustomErrorf(err)
 	}

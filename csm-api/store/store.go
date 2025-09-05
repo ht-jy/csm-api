@@ -97,7 +97,7 @@ type OrganizationStore interface {
 
 type ProjectDailyStore interface {
 	GetProjectDailyContentList(ctx context.Context, db Queryer, jno int64, targetDate time.Time) (*entity.ProjectDailys, error)
-	GetDailyJobList(ctx context.Context, db Queryer, jno int64, targetDate string) (entity.ProjectDailys, error)
+	GetDailyJobList(ctx context.Context, db Queryer, isRole bool, jno int64, uno string, targetDate string) (entity.ProjectDailys, error)
 	AddDailyJob(ctx context.Context, tx Execer, project entity.ProjectDailys) error
 	ModifyDailyJob(ctx context.Context, tx Execer, project entity.ProjectDaily) error
 	RemoveDailyJob(ctx context.Context, tx Execer, idx int64) error
@@ -202,7 +202,7 @@ type EquipStore interface {
 }
 
 type ScheduleStore interface {
-	GetRestScheduleList(ctx context.Context, db Queryer, jno int64, year string, month string) (entity.RestSchedules, error)
+	GetRestScheduleList(ctx context.Context, db Queryer, isRole bool, jno int64, uno string, year string, month string) (entity.RestSchedules, error)
 	AddRestSchedule(ctx context.Context, tx Execer, schedule entity.RestSchedules) error
 	ModifyRestSchedule(ctx context.Context, tx Execer, schedule entity.RestSchedule) error
 	RemoveRestSchedule(ctx context.Context, tx Execer, cno int64) error

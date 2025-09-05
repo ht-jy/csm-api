@@ -10,30 +10,63 @@ import (
 // func: 휴무일 조회
 // @param
 // -
-func (r *Repository) GetRestScheduleList(ctx context.Context, db Queryer, jno int64, year string, month string) (entity.RestSchedules, error) {
+func (r *Repository) GetRestScheduleList(ctx context.Context, db Queryer, isRole bool, jno int64, uno string, year string, month string) (entity.RestSchedules, error) {
 	list := entity.RestSchedules{}
 
-	query := `
-			SELECT 
-			    CNO,
-				JNO,
-				IS_EVERY_YEAR,
-				REST_YEAR,
-				REST_MONTH,
-				REST_DAY,
-				REASON
-			FROM IRIS_SCH_REST_SET
-			WHERE 
-			  (
-				(IS_EVERY_YEAR = 'Y' AND TO_CHAR(REST_MONTH) = :1 OR :2 IS NULL)
-				OR
-				(IS_EVERY_YEAR = 'N' AND TO_CHAR(REST_YEAR) = :3 AND TO_CHAR(REST_MONTH) = :4 OR :5 IS NULL)
-			  )
-			AND (
-			  :6 = 0 OR (JNO = :7 OR JNO = 0)
-			) ORDER BY JNO ASC`
+	// 프로젝트 전체조회 OR 본인이 속한 프로젝트
+	roleCondition := ""
+	if !isRole {
+		// 협력업체는 ID로 검색해야하기 때문에
+		roleCondition = fmt.Sprintf(`
+									AND UNO = %s
+								UNION
+									SELECT JNO
+									FROM JOB_SUBCON_INFO
+									WHERE ID = %s
+								`, uno, uno)
+	}
 
-	if err := db.SelectContext(ctx, &list, query, month, month, year, month, month, jno, jno); err != nil {
+	// 모든 스케줄 OR 선택한 프로젝트
+	condition := ""
+	if jno == 0 {
+		condition = "1 = 1"
+	} else {
+		condition = fmt.Sprintf("R.JNO = %d", jno)
+	}
+	query := fmt.Sprintf(`
+		WITH USER_IN_JNO AS (
+			SELECT DISTINCT J.JNO
+			FROM S_JOB_MEMBER_LIST M, IRIS_SITE_JOB J 
+			WHERE 
+				J.JNO = M.JNO(+)
+				AND M.JNO IS NOT NULL
+				AND J.IS_USE = 'Y'
+				%s
+			UNION
+				SELECT 0 FROM DUAL
+		)
+		SELECT 
+			R.CNO,
+			R.JNO,
+			R.IS_EVERY_YEAR,
+			R.REST_YEAR,
+			R.REST_MONTH,
+			R.REST_DAY,
+			R.REASON
+		FROM IRIS_SCH_REST_SET R, USER_IN_JNO J 
+		WHERE 
+			R.JNO = J.JNO
+			AND
+			  (
+				(R.IS_EVERY_YEAR = 'Y' AND TO_CHAR(R.REST_MONTH) = :1 OR :2 IS NULL)
+				OR
+				(R.IS_EVERY_YEAR = 'N' AND TO_CHAR(R.REST_YEAR) = :3 AND TO_CHAR(R.REST_MONTH) = :4 OR :5 IS NULL)
+			  )
+			AND %s
+		ORDER BY JNO ASC
+	`, roleCondition, condition)
+
+	if err := db.SelectContext(ctx, &list, query, month, month, year, month, month); err != nil {
 		return nil, utils.CustomErrorf(err)
 	}
 
