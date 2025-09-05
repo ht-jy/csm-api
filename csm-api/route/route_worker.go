@@ -28,6 +28,7 @@ func WorkerRoute(safeDB *sqlx.DB, cfg *config.Config, r *store.Repository) chi.R
 	router.Put("/total", workerHandler.Modify)                                      // 수정
 	router.Post("/total/delete", workerHandler.Remove)                              // 삭제
 	router.Get("/site-base", workerHandler.SiteBaseList)                            // 현장근로자 조회
+	router.Get("/site-base/co", workerHandler.SiteBaseListByCompany)                // 현장근로자 조회 - 협력업체
 	router.Post("/site-base", workerHandler.Merge)                                  // 현장근로자 추가&수정
 	router.Post("/site-base/deadline", workerHandler.ModifyDeadline)                // 현장근로자 마감처리
 	router.Post("/site-base/project", workerHandler.ModifyProject)                  // 현장근로자 프로젝트 이동

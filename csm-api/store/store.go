@@ -148,8 +148,10 @@ type WorkerStore interface {
 	MergeWorker(ctx context.Context, tx Execer, worker entity.Worker) (int64, error)
 	ModifyWorker(ctx context.Context, tx Execer, worker entity.Worker) error
 	RemoveWorker(ctx context.Context, tx Execer, worker entity.Worker) error
-	GetWorkerSiteBaseList(ctx context.Context, db Queryer, page entity.PageSql, search entity.WorkerDaily, retry string) (*entity.WorkerDailys, error)
-	GetWorkerSiteBaseCount(ctx context.Context, db Queryer, search entity.WorkerDaily, retry string) (int, error)
+	GetWorkerSiteBaseList(ctx context.Context, db Queryer, page entity.PageSql, isRole bool, uno string, search entity.WorkerDaily, retry string) (*entity.WorkerDailys, error)
+	GetWorkerSiteBaseCount(ctx context.Context, db Queryer, isRole bool, uno string, search entity.WorkerDaily, retry string) (int, error)
+	GetWorkerSiteBaseListByCompany(ctx context.Context, db Queryer, page entity.PageSql, id string, search entity.WorkerDaily, retry string) (*entity.WorkerDailys, error)
+	GetWorkerSiteBaseByCompanyCount(ctx context.Context, db Queryer, id string, search entity.WorkerDaily, retry string) (int, error)
 	MergeSiteBaseWorker(ctx context.Context, tx Execer, workers entity.WorkerDailys) error
 	MergeSiteBaseWorkerLog(ctx context.Context, tx Execer, workers entity.WorkerDailys) error
 	ModifyWorkerDeadline(ctx context.Context, tx Execer, workers entity.WorkerDailys) error

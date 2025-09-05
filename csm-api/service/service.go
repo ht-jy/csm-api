@@ -130,8 +130,10 @@ type WorkerService interface {
 	AddWorker(ctx context.Context, worker entity.Worker) error
 	ModifyWorker(ctx context.Context, worker entity.Worker) error
 	RemoveWorker(ctx context.Context, worker entity.Worker) error
-	GetWorkerSiteBaseList(ctx context.Context, page entity.Page, search entity.WorkerDaily, retry string) (*entity.WorkerDailys, error)
-	GetWorkerSiteBaseCount(ctx context.Context, search entity.WorkerDaily, retry string) (int, error)
+	GetWorkerSiteBaseList(ctx context.Context, page entity.Page, isRole bool, search entity.WorkerDaily, retry string) (*entity.WorkerDailys, error)
+	GetWorkerSiteBaseCount(ctx context.Context, isRole bool, search entity.WorkerDaily, retry string) (int, error)
+	GetWorkerSiteBaseListByCompany(ctx context.Context, page entity.Page, search entity.WorkerDaily, retry string) (*entity.WorkerDailys, error)
+	GetWorkerSiteBaseByCompanyCount(ctx context.Context, search entity.WorkerDaily, retry string) (int, error)
 	MergeSiteBaseWorker(ctx context.Context, workers entity.WorkerDailys) error
 	ModifyWorkerDeadline(ctx context.Context, workers entity.WorkerDailys) error
 	ModifyWorkerProject(ctx context.Context, workers entity.WorkerDailys) error
