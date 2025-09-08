@@ -84,7 +84,7 @@ type ProjectSettingStore interface {
 	MergeProjectSetting(ctx context.Context, tx Execer, project entity.ProjectSetting) (int64, error)
 	GetCheckProjectSetting(ctx context.Context, db Queryer) (*entity.ProjectSettings, error)
 	GetCheckProjectManHours(ctx context.Context, db Queryer) (*entity.ProjectSettings, error)
-	GetProjectSetting(ctx context.Context, db Queryer, jno int64) (*entity.ProjectSettings, error)
+	GetProjectSetting(ctx context.Context, db Queryer, isRole bool, uno string, jno int64) (*entity.ProjectSettings, error)
 	DeleteManHour(ctx context.Context, tx Execer, mhno int64) error
 	ProjectSettingLog(ctx context.Context, tx Execer, setting entity.ProjectSetting) error
 	ManHourLog(ctx context.Context, tx Execer, manhour entity.ManHour) error

@@ -68,7 +68,7 @@ type ProjectService interface {
 }
 
 type ProjectSettingService interface {
-	GetProjectSetting(ctx context.Context, jno int64) (*entity.ProjectSettings, error)
+	GetProjectSetting(ctx context.Context, jno int64, isRole bool) (*entity.ProjectSettings, error)
 	GetManHourList(ctx context.Context, jno int64) (*entity.ManHours, error)
 	MergeManHours(ctx context.Context, manHours *entity.ManHours) error
 	MergeProjectSetting(ctx context.Context, project entity.ProjectSetting) error

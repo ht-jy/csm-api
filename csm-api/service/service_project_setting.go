@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"csm-api/auth"
 	"csm-api/entity"
 	"csm-api/store"
 	"csm-api/txutil"
@@ -208,9 +209,11 @@ func (s *ServiceProjectSetting) CheckProjectSetting(ctx context.Context) (count 
 // func: 프로젝트 설정 정보 가져오기
 // @param
 // - jno: 프로젝트PK
-func (s *ServiceProjectSetting) GetProjectSetting(ctx context.Context, jno int64) (*entity.ProjectSettings, error) {
+func (s *ServiceProjectSetting) GetProjectSetting(ctx context.Context, jno int64, isRole bool) (*entity.ProjectSettings, error) {
 
-	setting, err := s.Store.GetProjectSetting(ctx, s.SafeDB, jno)
+	uno, _ := auth.GetContext(ctx, auth.Uno{})
+
+	setting, err := s.Store.GetProjectSetting(ctx, s.SafeDB, isRole, uno, jno)
 	if err != nil {
 		return &entity.ProjectSettings{}, utils.CustomErrorf(err)
 	}

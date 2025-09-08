@@ -25,7 +25,15 @@ func (h *HandlerProjectSetting) ProjectSettingList(w http.ResponseWriter, r *htt
 	}
 	jno, _ := strconv.ParseInt(jnoString, 10, 64)
 
-	setting, err := h.Service.GetProjectSetting(ctx, jno)
+	// 전체 조회할지 본인이 속한 프로젝트만 조회할지 권한
+	isRoleStr := r.URL.Query().Get("isRole")
+	isRole, err := strconv.ParseBool(isRoleStr)
+	if err != nil {
+		BadRequestResponse(ctx, w)
+		return
+	}
+
+	setting, err := h.Service.GetProjectSetting(ctx, jno, isRole)
 	if err != nil {
 		FailResponse(ctx, w, err)
 		return
