@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/godror/godror"
-	"github.com/guregu/null"
 	"strings"
 )
 
@@ -25,8 +24,15 @@ import (
 // func: 공지사항 전체 조회
 // @param
 // - page entity.PageSql : 현재페이지 번호, 리스트 목록 개수
-func (r *Repository) GetNoticeList(ctx context.Context, db Queryer, uno null.Int, role int, page entity.PageSql, search entity.Notice) (*entity.Notices, error) {
+func (r *Repository) GetNoticeList(ctx context.Context, db Queryer, uno string, isRole bool, page entity.PageSql, search entity.Notice) (*entity.Notices, error) {
 	notices := entity.Notices{}
+
+	roleCondition := ""
+	if isRole {
+		roleCondition = "AND 1 = 1"
+	} else {
+		roleCondition = fmt.Sprintf("AND (M.UNO = %s OR S.ID = %s)", uno, uno)
+	}
 
 	// 조건
 	condition := "1=1"
@@ -44,7 +50,18 @@ func (r *Repository) GetNoticeList(ctx context.Context, db Queryer, uno null.Int
 	}
 
 	query := fmt.Sprintf(`
-				WITH Notice AS (
+				WITH USER_IN_JNO AS (
+					SELECT 
+						DISTINCT(M.JNO) 
+					FROM 
+						S_JOB_MEMBER_LIST M, JOB_SUBCON_INFO S  
+					WHERE
+						M.JNO = S.JNO(+)
+						%s
+				UNION
+					SELECT 0 FROM dual
+				)
+				,Notice AS (
 					SELECT 
 						N.IDX,
 						N.JNO, 
@@ -60,24 +77,22 @@ func (r *Repository) GetNoticeList(ctx context.Context, db Queryer, uno null.Int
 						N.REG_USER || DECODE(N.REG_USER, '관리자', '',  ' ' || U.DUTY_NAME) AS USER_INFO, 
 						N.MOD_USER, 
 						N.MOD_DATE,
-						N.POSTING_PERIOD AS PERIOD_CODE,
+						-- N.POSTING_PERIOD AS PERIOD_CODE,
 						N.POSTING_START_DATE,
 						N.POSTING_END_DATE,
-						C.CODE_NM AS NOTICE_NM,
+						-- C.CODE_NM AS NOTICE_NM,
 						N.IS_IMPORTANT
 					FROM 
-						IRIS_NOTICE_BOARD N 
-					INNER JOIN
-						S_SYS_USER_SET U ON N.REG_UNO = U.UNO
-					LEFT OUTER JOIN 
-						S_JOB_INFO J ON J.JNO = N.JNO
-					LEFT OUTER JOIN
-						IRIS_CODE_SET C ON N.POSTING_PERIOD = C.CODE AND C.P_CODE = 'NOTICE_PERIOD'
+						IRIS_NOTICE_BOARD N, S_SYS_USER_SET U, S_JOB_INFO J, USER_IN_JNO I -- , IRIS_CODE_SET C
 					WHERE
-						N.IS_USE = 'Y'
+						N.REG_UNO = U.UNO
+						AND N.JNO = J.JNO(+)
+						-- AND N.POSTING_PERIOD = C.CODE(+)
+						AND N.JNO = I.JNO 
+						-- AND C.P_CODE = 'NOTICE_PERIOD'
+						AND N.IS_USE = 'Y'
 						AND N.POSTING_START_DATE <= SYSDATE
 						AND N.POSTING_END_DATE > SYSDATE
-						AND (N.JNO IN (SELECT DISTINCT(M.JNO) FROM S_JOB_MEMBER_LIST M LEFT JOIN JOB_SUBCON_INFO S ON M.JNO = S.JNO WHERE 1 = :1 OR M.UNO = :2 OR S.ID = :3) OR N.JNO = 0)
 				)
 				SELECT * 
 			  	FROM (
@@ -86,7 +101,6 @@ func (r *Repository) GetNoticeList(ctx context.Context, db Queryer, uno null.Int
 						SELECT *
 						FROM Notice
 						WHERE
-							JNO = 0 OR
 							%s
 						ORDER BY
 							%s,
@@ -97,12 +111,12 @@ func (r *Repository) GetNoticeList(ctx context.Context, db Queryer, uno null.Int
 							END,
 							POSTING_START_DATE DESC
 						) sorted_data
-					WHERE ROWNUM <= :4
+					WHERE ROWNUM <= :1
 			  	)
-			  	WHERE RNUM > :5`,
-		condition, order)
+			  	WHERE RNUM > :2`,
+		roleCondition, condition, order)
 
-	if err := db.SelectContext(ctx, &notices, query, role, uno, uno, page.EndNum, page.StartNum); err != nil {
+	if err := db.SelectContext(ctx, &notices, query, page.EndNum, page.StartNum); err != nil {
 		return nil, utils.CustomErrorf(err)
 	}
 	return &notices, nil
@@ -111,8 +125,16 @@ func (r *Repository) GetNoticeList(ctx context.Context, db Queryer, uno null.Int
 // func: 공지사항 전체 개수 조회
 // @param
 // -
-func (r *Repository) GetNoticeListCount(ctx context.Context, db Queryer, uno null.Int, role int, search entity.Notice) (int, error) {
+func (r *Repository) GetNoticeListCount(ctx context.Context, db Queryer, uno string, isRole bool, search entity.Notice) (int, error) {
 	var count int
+
+	roleCondition := ""
+	if isRole {
+		roleCondition = "AND 1 = 1"
+	} else {
+
+		roleCondition = fmt.Sprintf("AND (M.UNO = %s OR S.ID = %s)", uno, uno)
+	}
 
 	condition := "1=1"
 	condition = utils.Int64WhereConvert(condition, search.Jno.NullInt64, "JNO")
@@ -122,7 +144,18 @@ func (r *Repository) GetNoticeListCount(ctx context.Context, db Queryer, uno nul
 	condition = utils.StringWhereConvert(condition, search.UserInfo.NullString, "USER_INFO")
 
 	query := fmt.Sprintf(`
-			WITH Notice AS (
+			WITH USER_IN_JNO AS (
+					SELECT 
+						DISTINCT(M.JNO) 
+					FROM 
+						S_JOB_MEMBER_LIST M, JOB_SUBCON_INFO S  
+					WHERE
+						M.JNO = S.JNO(+)
+						%s
+				UNION
+					SELECT 0 FROM dual
+				)
+				,Notice AS (
 				SELECT 
 					N.IDX,
 					N.JNO, 
@@ -139,26 +172,23 @@ func (r *Repository) GetNoticeListCount(ctx context.Context, db Queryer, uno nul
 					N.MOD_USER, 
 					N.MOD_DATE 
 				FROM 
-					IRIS_NOTICE_BOARD N 
-				INNER JOIN
-					S_SYS_USER_SET U ON N.REG_UNO = U.UNO
-				LEFT OUTER JOIN 
-					S_JOB_INFO J ON J.JNO = N.JNO
-				LEFT OUTER JOIN
-					IRIS_CODE_SET C ON N.POSTING_PERIOD = C.CODE AND C.P_CODE = 'NOTICE_PERIOD'
+					IRIS_NOTICE_BOARD N, S_SYS_USER_SET U, S_JOB_INFO J, USER_IN_JNO I --, IRIS_CODE_SET C
 				WHERE
-					N.IS_USE = 'Y'
+					N.REG_UNO = U.UNO
+					AND J.JNO = N.JNO(+)
+					-- AND N.POSTING_PERIOD = C.CODE(+)
+					AND N.JNO = I.JNO 
+					-- AND C.P_CODE = 'NOTICE_PERIOD'
+					AND N.IS_USE = 'Y'
 					AND N.POSTING_START_DATE <= SYSDATE
 					AND N.POSTING_END_DATE > SYSDATE
-					AND (N.JNO IN (SELECT DISTINCT(M.JNO) FROM S_JOB_MEMBER_LIST M INNER JOIN JOB_SUBCON_INFO S ON M.JNO = S.JNO WHERE 1 = :1 OR M.UNO = :2 OR S.ID = :3) OR N.JNO = 0)
-			)
+				)
 			SELECT COUNT(*) 
 			FROM  Notice
 			WHERE
-				
-				%s`, condition)
+				%s`, roleCondition, condition)
 
-	if err := db.GetContext(ctx, &count, query, role, uno, uno); err != nil {
+	if err := db.GetContext(ctx, &count, query); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return 0, nil
 		}

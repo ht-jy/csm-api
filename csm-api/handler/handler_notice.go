@@ -56,7 +56,7 @@ func (n *NoticeHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	notices, err := n.Service.GetNoticeList(ctx, page, isRole, search)
 	if err != nil {
-		RespondJSON(ctx, w, &ErrResponse{Message: err.Error()}, http.StatusInternalServerError)
+		FailResponse(ctx, w, err)
 		return
 	}
 

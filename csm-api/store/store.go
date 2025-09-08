@@ -121,8 +121,8 @@ type CodeStore interface {
 }
 
 type NoticeStore interface {
-	GetNoticeList(ctx context.Context, db Queryer, uno null.Int, role int, pageSql entity.PageSql, search entity.Notice) (*entity.Notices, error)
-	GetNoticeListCount(ctx context.Context, db Queryer, uno null.Int, role int, search entity.Notice) (int, error)
+	GetNoticeList(ctx context.Context, db Queryer, uno string, isRole bool, pageSql entity.PageSql, search entity.Notice) (*entity.Notices, error)
+	GetNoticeListCount(ctx context.Context, db Queryer, uno string, isRole bool, search entity.Notice) (int, error)
 	AddNotice(ctx context.Context, tx Execer, notice entity.Notice) error
 	ModifyNotice(ctx context.Context, tx Execer, notice entity.Notice) error
 	RemoveNotice(ctx context.Context, tx Execer, idx int64) error
