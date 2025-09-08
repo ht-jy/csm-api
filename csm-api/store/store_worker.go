@@ -68,7 +68,7 @@ func (r *Repository) GetWorkerTotalList(ctx context.Context, db Queryer, page en
 
 	query := fmt.Sprintf(`
 				WITH USER_IN_SNO AS (
-					SELECT SNO
+					SELECT DISTINCT SNO
 					FROM S_JOB_MEMBER_LIST M, IRIS_SITE_JOB J 
 					WHERE 
 						J.JNO = M.JNO(+)
@@ -206,7 +206,7 @@ func (r *Repository) GetWorkerTotalCount(ctx context.Context, db Queryer, isRole
 
 	query := fmt.Sprintf(`
 						WITH USER_IN_SNO AS (
-							SELECT SNO
+							SELECT DISTINCT SNO
 							FROM S_JOB_MEMBER_LIST M, IRIS_SITE_JOB J 
 							WHERE 
 								J.JNO = M.JNO(+)
