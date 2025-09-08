@@ -17,6 +17,7 @@ type HandlerRestSchedule struct {
 // @param
 // -
 func (h *HandlerRestSchedule) RestList(w http.ResponseWriter, r *http.Request) {
+
 	jnoString := r.URL.Query().Get("jno")
 	year := r.URL.Query().Get("year")
 	month := r.URL.Query().Get("month")
@@ -26,8 +27,15 @@ func (h *HandlerRestSchedule) RestList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	isRoleStr := r.URL.Query().Get("isRole")
+	isRole, err := strconv.ParseBool(isRoleStr)
+	if err != nil {
+		BadRequestResponse(r.Context(), w)
+		return
+	}
+
 	jno, _ := strconv.ParseInt(jnoString, 10, 64)
-	list, err := h.Service.GetRestScheduleList(r.Context(), jno, year, month)
+	list, err := h.Service.GetRestScheduleList(r.Context(), isRole, jno, year, month)
 	if err != nil {
 		FailResponse(r.Context(), w, err)
 		return

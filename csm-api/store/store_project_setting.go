@@ -198,9 +198,24 @@ func (r *Repository) GetCheckProjectManHours(ctx context.Context, db Queryer) (p
 // func: 프로젝트 기본 설정 정보 조회
 // @param
 // - jno
-func (r *Repository) GetProjectSetting(ctx context.Context, db Queryer, jno int64) (*entity.ProjectSettings, error) {
+func (r *Repository) GetProjectSetting(ctx context.Context, db Queryer, isRole bool, uno string, jno int64) (*entity.ProjectSettings, error) {
+
+	roleCondition := ""
+	if isRole {
+		roleCondition = "1=1"
+	} else {
+		roleCondition = fmt.Sprintf("UNO = %s", uno)
+	}
 	setting := entity.ProjectSettings{}
 	query := fmt.Sprintf(`
+			WITH USER_IN_JNO AS (
+					SELECT 
+						DISTINCT(JNO) 
+					FROM 
+						S_JOB_MEMBER_LIST M 
+					WHERE
+						%s
+			)
 			SELECT 
 				J.JNO,
 				J.IN_TIME,
@@ -214,10 +229,12 @@ func (r *Repository) GetProjectSetting(ctx context.Context, db Queryer, jno int6
 				J.MOD_DATE,
 				J.MOD_UNO,
 				J.MOD_USER
-			FROM IRIS_JOB_SET J INNER JOIN IRIS_CODE_SET C ON J.CANCEL_CODE =  C.CODE
+			FROM IRIS_JOB_SET J, IRIS_CODE_SET C, USER_IN_JNO I
 			WHERE
-				J.JNO = :1
-			`)
+			    J.CANCEL_CODE = C.CODE
+				AND J.JNO = I.JNO
+				AND J.JNO = :1
+			`, roleCondition)
 
 	if err := db.SelectContext(ctx, &setting, query, jno); err != nil {
 		return &setting, utils.CustomErrorf(err)

@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/guregu/null"
+	"strings"
 )
 
 /**
@@ -100,10 +101,18 @@ func (s *ServiceCompany) GetSupervisorList(ctx context.Context, jno int64) (*ent
 	for _, user := range *cList {
 		if user != nil && user.Uno.Valid {
 			if _, ok := siteManagerMap[user.Uno.Int64]; ok {
-				user.IsSiteManager = null.StringFrom("Y")
+				user.IsTempSiteManager = null.StringFrom("Y")
 			} else {
-				user.IsSiteManager = null.StringFrom("N")
+				user.IsTempSiteManager = null.StringFrom("N")
 			}
+		}
+	}
+
+	for _, user := range *cList {
+		if user != nil && user.CdNm.Valid && (strings.Contains(user.CdNm.String, "공무") || strings.Contains(user.CdNm.String, "사무보조")) {
+			user.IsSiteManager = null.StringFrom("Y")
+		} else {
+			user.IsSiteManager = null.StringFrom("N")
 		}
 	}
 

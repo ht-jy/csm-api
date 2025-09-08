@@ -23,10 +23,20 @@ import (
 // func: 전체 근로자 조회
 // @param
 // - page entity.PageSql: 정렬, 리스트 수
+// - isRole bool : 전체프로젝트 조회 bool(true: 전체프로젝트, false: 본인이 속한 프로젝트)
+// - uno string : uno를 string으로 받아 쿼리에 바로 넣음.
 // - search entity.WorkerSql: 검색 단어
 // - retry string: 통합검색 텍스트
-func (r *Repository) GetWorkerTotalList(ctx context.Context, db Queryer, page entity.PageSql, search entity.Worker, retry string) (*entity.Workers, error) {
+func (r *Repository) GetWorkerTotalList(ctx context.Context, db Queryer, page entity.PageSql, isRole bool, uno string, search entity.Worker, retry string) (*entity.Workers, error) {
 	workers := entity.Workers{}
+
+	// 역할 조건
+	roleCondition := ""
+	if isRole {
+		roleCondition = "AND 1 = 1"
+	} else {
+		roleCondition = fmt.Sprintf("AND UNO = %s", uno)
+	}
 
 	condition := ""
 	condition = utils.StringWhereConvert(condition, search.JobName.NullString, "t2.JOB_NAME")
@@ -57,7 +67,15 @@ func (r *Repository) GetWorkerTotalList(ctx context.Context, db Queryer, page en
 	}
 
 	query := fmt.Sprintf(`
-				WITH LATEST_DAILY AS (
+				WITH USER_IN_SNO AS (
+					SELECT SNO
+					FROM S_JOB_MEMBER_LIST M, IRIS_SITE_JOB J 
+					WHERE 
+						J.JNO = M.JNO(+)
+						AND M.JNO IS NOT NULL
+						%s
+				),
+				LATEST_DAILY AS (
 					SELECT SNO, USER_KEY, MOD_DATE, REG_DATE
 					FROM (
 						SELECT
@@ -135,18 +153,19 @@ func (r *Repository) GetWorkerTotalList(ctx context.Context, db Queryer, page en
 							t1.MOD_USER,
 							t1.MOD_DATE,
 							COMMON.FUNC_DECODE(t1.REG_NO) AS REG_NO
-						FROM BASE t1
-						LEFT JOIN S_JOB_INFO t2 ON t1.JNO = t2.JNO
-						LEFT JOIN IRIS_SITE_SET t3 ON t1.SNO = t3.SNO
-						WHERE t1.SNO > 100
-						-- AND T3.IS_USE = 'Y'
+						FROM BASE t1, S_JOB_INFO t2, IRIS_SITE_SET t3, USER_IN_SNO t4
+						WHERE
+							t1.JNO = t2.JNO(+)
+							AND t1.SNO = t3.SNO(+)
+							AND t3.SNO = t4.SNO
+							AND t1.SNO > 100
 						%s %s
 						ORDER BY %s
 					) sorted_data
 					WHERE ROWNUM <= :1
 					ORDER BY RNUM %s
 				)
-				WHERE RNUM > :2`, condition, retryCondition, order, page.RnumOrder)
+				WHERE RNUM > :2`, roleCondition, condition, retryCondition, order, page.RnumOrder)
 
 	if err := db.SelectContext(ctx, &workers, query, page.EndNum, page.StartNum); err != nil {
 		return nil, utils.CustomErrorf(err)
@@ -157,10 +176,19 @@ func (r *Repository) GetWorkerTotalList(ctx context.Context, db Queryer, page en
 
 // func: 전체 근로자 개수 조회
 // @param
+// - isRole bool : 전체프로젝트 조회 bool(true: 전체프로젝트, false: 본인이 속한 프로젝트)
+// - uno string : uno를 string으로 받아 쿼리에 바로 넣음.
 // - searchTime string: 조회 날짜
 // - retry string: 통합검색 텍스트
-func (r *Repository) GetWorkerTotalCount(ctx context.Context, db Queryer, search entity.Worker, retry string) (int, error) {
+func (r *Repository) GetWorkerTotalCount(ctx context.Context, db Queryer, isRole bool, uno string, search entity.Worker, retry string) (int, error) {
 	var count int
+
+	roleCondition := ""
+	if isRole {
+		roleCondition = "AND 1 = 1"
+	} else {
+		roleCondition = fmt.Sprintf("AND UNO = %s", uno)
+	}
 
 	condition := ""
 	condition = utils.StringWhereConvert(condition, search.JobName.NullString, "t2.JOB_NAME")
@@ -177,7 +205,15 @@ func (r *Repository) GetWorkerTotalCount(ctx context.Context, db Queryer, search
 	retryCondition := utils.RetrySearchTextConvert(retry, columns)
 
 	query := fmt.Sprintf(`
-						WITH LATEST_DAILY AS (
+						WITH USER_IN_SNO AS (
+							SELECT SNO
+							FROM S_JOB_MEMBER_LIST M, IRIS_SITE_JOB J 
+							WHERE 
+								J.JNO = M.JNO(+)
+								AND M.JNO IS NOT NULL
+								%s
+						),
+						LATEST_DAILY AS (
 							SELECT SNO, USER_KEY, MOD_DATE, REG_DATE
 							FROM (
 								SELECT
@@ -209,12 +245,14 @@ func (r *Repository) GetWorkerTotalCount(ctx context.Context, db Queryer, search
 						)
 						SELECT 
 							COUNT(*)
-						FROM BASE t1
-						LEFT JOIN S_JOB_INFO t2 ON t1.JNO = t2.JNO
-						LEFT JOIN IRIS_SITE_SET t3 ON t1.SNO = t3.SNO
-						WHERE t1.SNO > 100
+						FROM BASE t1, S_JOB_INFO t2, IRIS_SITE_SET t3, USER_IN_SNO t4
+						WHERE
+							t1.JNO = t2.JNO(+)
+							AND t1.SNO = t3.SNO(+)
+							AND t3.SNO = t4.SNO
+							AND t1.SNO > 100
 						--AND t3.IS_USE = 'Y'
-						%s %s`, condition, retryCondition)
+						%s %s`, roleCondition, condition, retryCondition)
 
 	if err := db.GetContext(ctx, &count, query); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -534,8 +572,13 @@ func (r *Repository) RemoveWorker(ctx context.Context, tx Execer, worker entity.
 // @param
 // - page entity.PageSql: 정렬, 리스트 수
 // - search entity.WorkerSql: 검색 단어
-func (r *Repository) GetWorkerSiteBaseList(ctx context.Context, db Queryer, page entity.PageSql, search entity.WorkerDaily, retry string) (*entity.WorkerDailys, error) {
+func (r *Repository) GetWorkerSiteBaseList(ctx context.Context, db Queryer, page entity.PageSql, isRole bool, uno string, search entity.WorkerDaily, retry string) (*entity.WorkerDailys, error) {
 	list := entity.WorkerDailys{}
+
+	roleCondition := ""
+	if !isRole {
+		roleCondition = fmt.Sprintf("AND UNO = %s", uno)
+	}
 
 	condition := ""
 
@@ -565,6 +608,14 @@ func (r *Repository) GetWorkerSiteBaseList(ctx context.Context, db Queryer, page
 	}
 
 	query := fmt.Sprintf(`
+				WITH USER_IN_JNO AS (
+					SELECT DISTINCT J.JNO
+					FROM S_JOB_MEMBER_LIST M, IRIS_SITE_JOB J 
+					WHERE 
+						J.JNO = M.JNO(+)
+						AND M.JNO IS NOT NULL
+						%s
+				)
 				SELECT *
 				FROM (
 					SELECT ROWNUM AS RNUM, sorted_data.*
@@ -588,20 +639,23 @@ func (r *Repository) GetWorkerSiteBaseList(ctx context.Context, db Queryer, page
 								t1.WORK_STATE AS WORK_STATE,
 								t1.COMPARE_STATE AS COMPARE_STATE,
 								t1.WORK_HOUR as WORK_HOUR
-							FROM IRIS_WORKER_DAILY_SET t1
-							LEFT JOIN IRIS_WORKER_SET t2 ON t1.USER_KEY = t2.USER_KEY AND t1.sno = t2.sno
-							WHERE t1.SNO > 100
-							AND T2.IS_DEL = 'N'
-							AND t1.COMPARE_STATE in ('S', 'X')
-							AND t1.JNO = :1
-							AND TO_CHAR(t1.RECORD_DATE, 'yyyy-mm-dd') BETWEEN :2 AND :3
+							FROM IRIS_WORKER_DAILY_SET t1, IRIS_WORKER_SET t2, USER_IN_JNO t3
+							WHERE 
+							    t1.USER_KEY = t2.USER_KEY(+) 
+							    AND t1.sno = t2.sno(+)
+								AND t1.jno = t3.jno
+								AND t1.SNO > 100
+								AND T2.IS_DEL = 'N'
+								AND t1.COMPARE_STATE in ('S', 'X')
+								AND t1.JNO = :1
+								AND TO_CHAR(t1.RECORD_DATE, 'yyyy-mm-dd') BETWEEN :2 AND :3
 							%s %s
 							ORDER BY %s
 					) sorted_data
 					WHERE ROWNUM <= :4
 					ORDER BY RNUM %s
 				)
-				WHERE RNUM > :5`, condition, retryCondition, order, page.RnumOrder)
+				WHERE RNUM > :5`, roleCondition, condition, retryCondition, order, page.RnumOrder)
 
 	if err := db.SelectContext(ctx, &list, query, search.Jno, search.SearchStartTime, search.SearchEndTime, page.EndNum, page.StartNum); err != nil {
 		return nil, utils.CustomErrorf(err)
@@ -613,8 +667,13 @@ func (r *Repository) GetWorkerSiteBaseList(ctx context.Context, db Queryer, page
 // func: 현장 근로자 개수 조회
 // @param
 // - searchTime string: 조회 날짜
-func (r *Repository) GetWorkerSiteBaseCount(ctx context.Context, db Queryer, search entity.WorkerDaily, retry string) (int, error) {
+func (r *Repository) GetWorkerSiteBaseCount(ctx context.Context, db Queryer, isRole bool, uno string, search entity.WorkerDaily, retry string) (int, error) {
 	var count int
+
+	roleCondition := ""
+	if !isRole {
+		roleCondition = fmt.Sprintf("AND UNO = %s", uno)
+	}
 
 	condition := ""
 
@@ -629,16 +688,174 @@ func (r *Repository) GetWorkerSiteBaseCount(ctx context.Context, db Queryer, sea
 	retryCondition := utils.RetrySearchTextConvert(retry, columns)
 
 	query := fmt.Sprintf(`
+							WITH USER_IN_JNO AS (
+								SELECT DISTINCT J.JNO
+								FROM S_JOB_MEMBER_LIST M, IRIS_SITE_JOB J 
+								WHERE 
+									J.JNO = M.JNO(+)
+									AND M.JNO IS NOT NULL
+									%s
+							)
 							SELECT 
 								count(*)
-							FROM IRIS_WORKER_DAILY_SET t1
-							LEFT JOIN IRIS_WORKER_SET t2 ON t1.SNO = t2.SNO AND t1.USER_KEY = t2.USER_KEY 
-							WHERE t1.SNO > 100
-							AND T2.IS_DEL = 'N'
-							AND t1.COMPARE_STATE in ('S', 'X')
-							AND t1.JNO = :1
-							AND TO_CHAR(t1.RECORD_DATE, 'yyyy-mm-dd') BETWEEN :2 AND :3
-							%s %s`, condition, retryCondition)
+							FROM IRIS_WORKER_DAILY_SET t1, IRIS_WORKER_SET t2, USER_IN_JNO t3
+							WHERE 
+							    t1.USER_KEY = t2.USER_KEY(+) 
+							    AND t1.sno = t2.sno(+)
+								AND t1.jno = t3.jno
+								AND t1.SNO > 100
+								AND T2.IS_DEL = 'N'
+								AND t1.COMPARE_STATE in ('S', 'X')
+								AND t1.JNO = :1
+								AND TO_CHAR(t1.RECORD_DATE, 'yyyy-mm-dd') BETWEEN :2 AND :3
+							%s %s`, roleCondition, condition, retryCondition)
+
+	if err := db.GetContext(ctx, &count, query, search.Jno, search.SearchStartTime, search.SearchEndTime); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, nil
+		}
+		return 0, utils.CustomErrorf(err)
+	}
+	return count, nil
+}
+
+// func: 현장 근로자 조회 - 협력업체
+// @param
+// - page entity.PageSql: 정렬, 리스트 수
+// - search entity.WorkerSql: 검색 단어
+func (r *Repository) GetWorkerSiteBaseListByCompany(ctx context.Context, db Queryer, page entity.PageSql, id string, search entity.WorkerDaily, retry string) (*entity.WorkerDailys, error) {
+	list := entity.WorkerDailys{}
+
+	roleCondition := fmt.Sprintf("AND ID = %s", id)
+
+	condition := ""
+
+	condition = utils.StringWhereConvert(condition, search.UserId.NullString, "t2.USER_ID")
+	condition = utils.StringWhereConvert(condition, search.UserNm.NullString, "t2.USER_NM")
+	condition = utils.StringWhereConvert(condition, search.Department.NullString, "t2.DEPARTMENT")
+
+	var columns []string
+	columns = append(columns, "t2.USER_ID")
+	columns = append(columns, "t2.USER_NM")
+	columns = append(columns, "t2.DEPARTMENT")
+	retryCondition := utils.RetrySearchTextConvert(retry, columns)
+
+	var order string
+	if page.Order.Valid {
+		order = page.Order.String
+	} else {
+		//order = "RECORD_DATE DESC, OUT_RECOG_TIME DESC NULLS LAST"
+		order = `
+				RECORD_DATE DESC, (
+					CASE 
+						WHEN REG_DATE IS NULL THEN MOD_DATE 
+						WHEN MOD_DATE IS NULL THEN REG_DATE 
+						ELSE GREATEST(REG_DATE, MOD_DATE) 
+					END
+				) DESC NULLS LAST`
+	}
+
+	query := fmt.Sprintf(`
+				WITH USER_IN_JNO AS (
+					SELECT DISTINCT J.JNO, S.COMP_NAME
+					FROM JOB_SUBCON_INFO S, IRIS_SITE_JOB J 
+					WHERE 
+						J.JNO = S.JNO(+)
+						AND S.JNO IS NOT NULL
+						%s
+				)
+				SELECT *
+				FROM (
+					SELECT ROWNUM AS RNUM, sorted_data.*
+					FROM (
+						   	SELECT 
+								t1.SNO AS SNO,
+								t1.JNO AS JNO,
+								t1.USER_KEY AS USER_KEY,
+								t2.USER_ID AS USER_ID,
+								t2.USER_NM AS USER_NM,
+								t2.DEPARTMENT AS DEPARTMENT,
+								t1.RECORD_DATE AS RECORD_DATE,
+								t1.IN_RECOG_TIME AS IN_RECOG_TIME,
+								t1.OUT_RECOG_TIME AS OUT_RECOG_TIME,
+								t1.IS_DEADLINE AS IS_DEADLINE,
+								t1.IS_OVERTIME AS IS_OVERTIME,
+								t1.REG_USER AS REG_USER,
+								t1.REG_DATE AS REG_DATE,
+								t1.MOD_USER AS MOD_USER,
+								t1.MOD_DATE AS MOD_DATE,
+								t1.WORK_STATE AS WORK_STATE,
+								t1.COMPARE_STATE AS COMPARE_STATE,
+								t1.WORK_HOUR as WORK_HOUR
+							FROM IRIS_WORKER_DAILY_SET t1, IRIS_WORKER_SET t2, USER_IN_JNO t3
+							WHERE 
+							    t1.USER_KEY = t2.USER_KEY(+) 
+							    AND t1.sno = t2.sno(+)
+								AND t1.jno = t3.jno
+								AND t1.SNO > 100
+								AND t2.DEPARTMENT LIKE '%%' || TRIM(REPLACE(NVL(t3.COMP_NAME, ''), '주식회사', '')) || '%%'
+								AND T2.IS_DEL = 'N'
+								AND t1.COMPARE_STATE in ('S', 'X')
+								AND t1.JNO = :1
+								AND TO_CHAR(t1.RECORD_DATE, 'yyyy-mm-dd') BETWEEN :2 AND :3
+							%s %s
+							ORDER BY %s
+					) sorted_data
+					WHERE ROWNUM <= :4
+					ORDER BY RNUM %s
+				)
+				WHERE RNUM > :5`, roleCondition, condition, retryCondition, order, page.RnumOrder)
+
+	if err := db.SelectContext(ctx, &list, query, search.Jno, search.SearchStartTime, search.SearchEndTime, page.EndNum, page.StartNum); err != nil {
+		return nil, utils.CustomErrorf(err)
+	}
+
+	return &list, nil
+}
+
+// func: 현장 근로자 개수 조회 - 협력업체
+// @param
+// - searchTime string: 조회 날짜
+func (r *Repository) GetWorkerSiteBaseByCompanyCount(ctx context.Context, db Queryer, id string, search entity.WorkerDaily, retry string) (int, error) {
+	var count int
+
+	roleCondition := fmt.Sprintf("AND ID = %s", id)
+
+	condition := ""
+
+	condition = utils.StringWhereConvert(condition, search.UserId.NullString, "t2.USER_ID")
+	condition = utils.StringWhereConvert(condition, search.UserNm.NullString, "t2.USER_NM")
+	condition = utils.StringWhereConvert(condition, search.Department.NullString, "t2.DEPARTMENT")
+
+	var columns []string
+	columns = append(columns, "t2.USER_ID")
+	columns = append(columns, "t2.USER_NM")
+	columns = append(columns, "t2.DEPARTMENT")
+	retryCondition := utils.RetrySearchTextConvert(retry, columns)
+
+	query := fmt.Sprintf(`
+							WITH USER_IN_JNO AS (
+								SELECT DISTINCT J.JNO, S.COMP_NAME
+								FROM JOB_SUBCON_INFO S, IRIS_SITE_JOB J 
+								WHERE 
+									J.JNO = S.JNO(+)
+									AND S.JNO IS NOT NULL
+									%s
+							)
+							SELECT 
+								count(*)
+							FROM IRIS_WORKER_DAILY_SET t1, IRIS_WORKER_SET t2, USER_IN_JNO t3
+							WHERE 
+							    t1.USER_KEY = t2.USER_KEY(+) 
+							    AND t1.sno = t2.sno(+)
+								AND t1.jno = t3.jno
+								AND t1.SNO > 100
+								AND t2.DEPARTMENT LIKE '%%' || TRIM(REPLACE(NVL(t3.COMP_NAME, ''), '주식회사', '')) || '%%'
+								AND T2.IS_DEL = 'N'
+								AND t1.COMPARE_STATE in ('S', 'X')
+								AND t1.JNO = :1
+								AND TO_CHAR(t1.RECORD_DATE, 'yyyy-mm-dd') BETWEEN :2 AND :3
+							%s %s`, roleCondition, condition, retryCondition)
 
 	if err := db.GetContext(ctx, &count, query, search.Jno, search.SearchStartTime, search.SearchEndTime); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

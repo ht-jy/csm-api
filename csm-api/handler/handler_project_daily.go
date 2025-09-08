@@ -15,6 +15,14 @@ type HandlerProjectDaily struct {
 
 // 작업내용 조회
 func (h *HandlerProjectDaily) List(w http.ResponseWriter, r *http.Request) {
+
+	isRoleStr := r.URL.Query().Get("isRole")
+	isRole, err := strconv.ParseBool(isRoleStr)
+	if err != nil {
+		BadRequestResponse(r.Context(), w)
+		return
+	}
+
 	targetDate := r.URL.Query().Get("target_date")
 	jnoString := r.URL.Query().Get("jno")
 	if targetDate == "" {
@@ -23,7 +31,7 @@ func (h *HandlerProjectDaily) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jno, _ := strconv.ParseInt(jnoString, 10, 64)
-	list, err := h.Service.GetDailyJobList(r.Context(), jno, targetDate)
+	list, err := h.Service.GetDailyJobList(r.Context(), isRole, jno, targetDate)
 	if err != nil {
 		FailResponse(r.Context(), w, err)
 		return

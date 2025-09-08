@@ -28,6 +28,14 @@ type HandlerWorker struct {
 func (h *HandlerWorker) TotalList(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
+	// 전체 조회할지 본인이 속한 프로젝트만 조회할지 권한
+	isRoleStr := r.URL.Query().Get("isRole")
+	isRole, err := strconv.ParseBool(isRoleStr)
+	if err != nil {
+		BadRequestResponse(ctx, w)
+		return
+	}
+
 	// http get paramter를 저장할 구조체 생성 및 파싱
 	page := entity.Page{}
 	search := entity.Worker{}
@@ -64,14 +72,14 @@ func (h *HandlerWorker) TotalList(w http.ResponseWriter, r *http.Request) {
 	search.DiscName = utils.ParseNullString(discName)
 
 	// 조회
-	list, err := h.Service.GetWorkerTotalList(ctx, page, search, retrySearch)
+	list, err := h.Service.GetWorkerTotalList(ctx, page, isRole, search, retrySearch)
 	if err != nil {
 		FailResponse(ctx, w, err)
 		return
 	}
 
 	// 개수 조회
-	count, err := h.Service.GetWorkerTotalCount(ctx, search, retrySearch)
+	count, err := h.Service.GetWorkerTotalCount(ctx, isRole, search, retrySearch)
 	if err != nil {
 		FailResponse(ctx, w, err)
 		return
@@ -215,6 +223,14 @@ func (h *HandlerWorker) Remove(w http.ResponseWriter, r *http.Request) {
 func (h *HandlerWorker) SiteBaseList(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
+	// 전체 조회할지 본인이 속한 프로젝트만 조회할지 권한
+	isRoleStr := r.URL.Query().Get("isRole")
+	isRole, err := strconv.ParseBool(isRoleStr)
+	if err != nil {
+		BadRequestResponse(ctx, w)
+		return
+	}
+
 	// http get paramter를 저장할 구조체 생성 및 파싱
 	page := entity.Page{}
 	search := entity.WorkerDaily{}
@@ -248,14 +264,14 @@ func (h *HandlerWorker) SiteBaseList(w http.ResponseWriter, r *http.Request) {
 	search.SearchEndTime = utils.ParseNullString(searchEndTime)
 
 	// 조회
-	list, err := h.Service.GetWorkerSiteBaseList(ctx, page, search, retrySearch)
+	list, err := h.Service.GetWorkerSiteBaseList(ctx, page, isRole, search, retrySearch)
 	if err != nil {
 		FailResponse(ctx, w, err)
 		return
 	}
 
 	// 개수 조회
-	count, err := h.Service.GetWorkerSiteBaseCount(ctx, search, retrySearch)
+	count, err := h.Service.GetWorkerSiteBaseCount(ctx, isRole, search, retrySearch)
 	if err != nil {
 		FailResponse(ctx, w, err)
 		return
@@ -265,6 +281,66 @@ func (h *HandlerWorker) SiteBaseList(w http.ResponseWriter, r *http.Request) {
 		List  entity.WorkerDailys `json:"list"`
 		Count int                 `json:"count"`
 	}{List: *list, Count: count}
+	SuccessValuesResponse(ctx, w, values)
+}
+
+// func: 현장 근로자 조회 - 협력업체
+// @param
+// - response: http get paramter
+func (h *HandlerWorker) SiteBaseListByCompany(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	// http get paramter를 저장할 구조체 생성 및 파싱
+	page := entity.Page{}
+	search := entity.WorkerDaily{}
+
+	pageNum := r.URL.Query().Get("page_num")
+	rowSize := r.URL.Query().Get("row_size")
+	order := r.URL.Query().Get("order")
+	rnumOrder := r.URL.Query().Get("rnum_order")
+	retrySearch := r.URL.Query().Get("retry_search")
+	jno := r.URL.Query().Get("jno")
+	userId := r.URL.Query().Get("user_id")
+	userNm := r.URL.Query().Get("user_nm")
+	department := r.URL.Query().Get("department")
+	searchStartTime := r.URL.Query().Get("search_start_time")
+	searchEndTime := r.URL.Query().Get("search_end_time")
+
+	if pageNum == "" || rowSize == "" || searchStartTime == "" || searchEndTime == "" || jno == "" {
+		BadRequestResponse(ctx, w)
+		return
+	}
+
+	page.PageNum, _ = strconv.Atoi(pageNum)
+	page.RowSize, _ = strconv.Atoi(rowSize)
+	page.Order = order
+	page.RnumOrder = rnumOrder
+	search.Jno = utils.ParseNullInt(jno)
+	search.UserId = utils.ParseNullString(userId)
+	search.UserNm = utils.ParseNullString(userNm)
+	search.Department = utils.ParseNullString(department)
+	search.SearchStartTime = utils.ParseNullString(searchStartTime)
+	search.SearchEndTime = utils.ParseNullString(searchEndTime)
+
+	// 조회
+	list, err := h.Service.GetWorkerSiteBaseListByCompany(ctx, page, search, retrySearch)
+	if err != nil {
+		FailResponse(ctx, w, err)
+		return
+	}
+
+	// 개수 조회
+	count, err := h.Service.GetWorkerSiteBaseByCompanyCount(ctx, search, retrySearch)
+	if err != nil {
+		FailResponse(ctx, w, err)
+		return
+	}
+
+	values := struct {
+		List  entity.WorkerDailys `json:"list"`
+		Count int                 `json:"count"`
+	}{List: *list, Count: count}
+
 	SuccessValuesResponse(ctx, w, values)
 }
 

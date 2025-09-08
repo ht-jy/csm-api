@@ -48,18 +48,19 @@ type Managers []*Manager
 
 // struct: Begin::관리감독자
 type Supervisor struct {
-	Uno           null.Int    `json:"uno" db:"UNO"`
-	Jno           null.Int    `json:"jno" db:"JNO"`
-	UserName      null.String `json:"user_name" db:"USER_NAME"`
-	UserId        null.String `json:"user_id" db:"USER_ID"`
-	DutyName      null.String `json:"duty_name" db:"DUTY_NAME"`
-	DutyCd        null.String `json:"duty_cd" db:"DUTY_CD"`
-	JobdutyId     null.String `json:"jobduty_id" db:"JOBDUTY_ID"`
-	JoinDate      null.Time   `json:"join_date" db:"JOIN_DATE"`
-	FuncNo        null.String `json:"func_no" db:"FUNC_NO"`
-	CdNm          null.String `json:"cd_nm" db:"CD_NM"`
-	SysSafe       null.String `json:"sys_safe" db:"SYS_SAFE"`
-	IsSiteManager null.String `json:"is_site_manager" db:"IS_SITE_MANAGER"`
+	Uno               null.Int    `json:"uno" db:"UNO"`
+	Jno               null.Int    `json:"jno" db:"JNO"`
+	UserName          null.String `json:"user_name" db:"USER_NAME"`
+	UserId            null.String `json:"user_id" db:"USER_ID"`
+	DutyName          null.String `json:"duty_name" db:"DUTY_NAME"`
+	DutyCd            null.String `json:"duty_cd" db:"DUTY_CD"`
+	JobdutyId         null.String `json:"jobduty_id" db:"JOBDUTY_ID"`
+	JoinDate          null.Time   `json:"join_date" db:"JOIN_DATE"`
+	FuncNo            null.String `json:"func_no" db:"FUNC_NO"`
+	CdNm              null.String `json:"cd_nm" db:"CD_NM"`
+	SysSafe           null.String `json:"sys_safe" db:"SYS_SAFE"`
+	IsSiteManager     null.String `json:"is_site_manager" db:"IS_SITE_MANAGER"`
+	IsTempSiteManager null.String `json:"is_temp_site_manager" db:"IS_TEMP_SITE_MANAGER"`
 }
 type Supervisors []*Supervisor
 

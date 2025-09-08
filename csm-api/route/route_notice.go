@@ -13,14 +13,13 @@ func NoticeRoute(safeDB *sqlx.DB, r *store.Repository) chi.Router {
 
 	noticeHandler := &handler.NoticeHandler{
 		Service: &service.ServiceNotice{
-			SafeDB:    safeDB,
-			SafeTDB:   safeDB,
-			Store:     r,
-			UserStore: r,
+			SafeDB:  safeDB,
+			SafeTDB: safeDB,
+			Store:   r,
 		},
 	}
 
-	router.Get("/{uno}", noticeHandler.List)      // 조회
+	router.Get("/", noticeHandler.List)           // 조회
 	router.Post("/", noticeHandler.Add)           // 추가
 	router.Put("/", noticeHandler.Modify)         // 수정
 	router.Delete("/{idx}", noticeHandler.Remove) // 삭제

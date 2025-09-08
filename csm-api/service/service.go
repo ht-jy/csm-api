@@ -68,7 +68,7 @@ type ProjectService interface {
 }
 
 type ProjectSettingService interface {
-	GetProjectSetting(ctx context.Context, jno int64) (*entity.ProjectSettings, error)
+	GetProjectSetting(ctx context.Context, jno int64, isRole bool) (*entity.ProjectSettings, error)
 	GetManHourList(ctx context.Context, jno int64) (*entity.ManHours, error)
 	MergeManHours(ctx context.Context, manHours *entity.ManHours) error
 	MergeProjectSetting(ctx context.Context, project entity.ProjectSetting) error
@@ -83,7 +83,7 @@ type OrganizationService interface {
 }
 
 type ProjectDailyService interface {
-	GetDailyJobList(ctx context.Context, jno int64, targetDate string) (entity.ProjectDailys, error)
+	GetDailyJobList(ctx context.Context, isRole bool, jno int64, targetDate string) (entity.ProjectDailys, error)
 	AddDailyJob(ctx context.Context, project entity.ProjectDailys) error
 	ModifyDailyJob(ctx context.Context, project entity.ProjectDaily) error
 	RemoveDailyJob(ctx context.Context, idx int64) error
@@ -122,16 +122,18 @@ type DeviceService interface {
 }
 
 type WorkerService interface {
-	GetWorkerTotalList(ctx context.Context, page entity.Page, search entity.Worker, retry string) (*entity.Workers, error)
-	GetWorkerTotalCount(ctx context.Context, search entity.Worker, retry string) (int, error)
+	GetWorkerTotalList(ctx context.Context, page entity.Page, isRole bool, search entity.Worker, retry string) (*entity.Workers, error)
+	GetWorkerTotalCount(ctx context.Context, isRole bool, search entity.Worker, retry string) (int, error)
 	GetAbsentWorkerList(ctx context.Context, page entity.Page, search entity.WorkerDaily, retry string) (*entity.Workers, error)
 	GetAbsentWorkerCount(ctx context.Context, search entity.WorkerDaily, retry string) (int, error)
 	GetWorkerDepartList(ctx context.Context, jno int64) ([]string, error)
 	AddWorker(ctx context.Context, worker entity.Worker) error
 	ModifyWorker(ctx context.Context, worker entity.Worker) error
 	RemoveWorker(ctx context.Context, worker entity.Worker) error
-	GetWorkerSiteBaseList(ctx context.Context, page entity.Page, search entity.WorkerDaily, retry string) (*entity.WorkerDailys, error)
-	GetWorkerSiteBaseCount(ctx context.Context, search entity.WorkerDaily, retry string) (int, error)
+	GetWorkerSiteBaseList(ctx context.Context, page entity.Page, isRole bool, search entity.WorkerDaily, retry string) (*entity.WorkerDailys, error)
+	GetWorkerSiteBaseCount(ctx context.Context, isRole bool, search entity.WorkerDaily, retry string) (int, error)
+	GetWorkerSiteBaseListByCompany(ctx context.Context, page entity.Page, search entity.WorkerDaily, retry string) (*entity.WorkerDailys, error)
+	GetWorkerSiteBaseByCompanyCount(ctx context.Context, search entity.WorkerDaily, retry string) (int, error)
 	MergeSiteBaseWorker(ctx context.Context, workers entity.WorkerDailys) error
 	ModifyWorkerDeadline(ctx context.Context, workers entity.WorkerDailys) error
 	ModifyWorkerProject(ctx context.Context, workers entity.WorkerDailys) error
@@ -183,7 +185,7 @@ type EquipService interface {
 }
 
 type ScheduleService interface {
-	GetRestScheduleList(ctx context.Context, jno int64, year string, month string) (entity.RestSchedules, error)
+	GetRestScheduleList(ctx context.Context, isRole bool, jno int64, year string, month string) (entity.RestSchedules, error)
 	AddRestSchedule(ctx context.Context, schedule entity.RestSchedules) error
 	ModifyRestSchedule(ctx context.Context, schedule entity.RestSchedule) error
 	RemoveRestSchedule(ctx context.Context, cno int64) error

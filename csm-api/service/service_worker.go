@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"csm-api/auth"
 	"csm-api/config"
 	"csm-api/entity"
 	"csm-api/store"
@@ -33,7 +34,7 @@ type ServiceWorker struct {
 // - page entity.PageSql: 정렬, 리스트 수
 // - search entity.WorkerSql: 검색 단어
 // - retry string: 통합검색 텍스트
-func (s *ServiceWorker) GetWorkerTotalList(ctx context.Context, page entity.Page, search entity.Worker, retry string) (*entity.Workers, error) {
+func (s *ServiceWorker) GetWorkerTotalList(ctx context.Context, page entity.Page, isRole bool, search entity.Worker, retry string) (*entity.Workers, error) {
 	// regular type ->  sql type 변환
 	pageSql := entity.PageSql{}
 	pageSql, err := pageSql.OfPageSql(page)
@@ -41,8 +42,10 @@ func (s *ServiceWorker) GetWorkerTotalList(ctx context.Context, page entity.Page
 		return nil, utils.CustomErrorf(err)
 	}
 
+	uno, _ := auth.GetContext(ctx, auth.Uno{})
+
 	// 조회
-	list, err := s.Store.GetWorkerTotalList(ctx, s.SafeDB, pageSql, search, retry)
+	list, err := s.Store.GetWorkerTotalList(ctx, s.SafeDB, pageSql, isRole, uno, search, retry)
 	if err != nil {
 		return nil, utils.CustomErrorf(err)
 	}
@@ -54,8 +57,9 @@ func (s *ServiceWorker) GetWorkerTotalList(ctx context.Context, page entity.Page
 // @param
 // - searchTime string: 조회 날짜
 // - retry string: 통합검색 텍스트
-func (s *ServiceWorker) GetWorkerTotalCount(ctx context.Context, search entity.Worker, retry string) (int, error) {
-	count, err := s.Store.GetWorkerTotalCount(ctx, s.SafeDB, search, retry)
+func (s *ServiceWorker) GetWorkerTotalCount(ctx context.Context, isRole bool, search entity.Worker, retry string) (int, error) {
+	uno, _ := auth.GetContext(ctx, auth.Uno{})
+	count, err := s.Store.GetWorkerTotalCount(ctx, s.SafeDB, isRole, uno, search, retry)
 	if err != nil {
 		return 0, utils.CustomErrorf(err)
 	}
@@ -160,7 +164,7 @@ func (s *ServiceWorker) RemoveWorker(ctx context.Context, worker entity.Worker) 
 // @param
 // - page entity.PageSql: 정렬, 리스트 수
 // - search entity.WorkerSql: 검색 단어
-func (s *ServiceWorker) GetWorkerSiteBaseList(ctx context.Context, page entity.Page, search entity.WorkerDaily, retry string) (*entity.WorkerDailys, error) {
+func (s *ServiceWorker) GetWorkerSiteBaseList(ctx context.Context, page entity.Page, isRole bool, search entity.WorkerDaily, retry string) (*entity.WorkerDailys, error) {
 	// regular type ->  sql type 변환
 	pageSql := entity.PageSql{}
 	pageSql, err := pageSql.OfPageSql(page)
@@ -168,8 +172,10 @@ func (s *ServiceWorker) GetWorkerSiteBaseList(ctx context.Context, page entity.P
 		return nil, utils.CustomErrorf(err)
 	}
 
+	uno, _ := auth.GetContext(ctx, auth.Uno{})
+
 	// 조회
-	list, err := s.Store.GetWorkerSiteBaseList(ctx, s.SafeDB, pageSql, search, retry)
+	list, err := s.Store.GetWorkerSiteBaseList(ctx, s.SafeDB, pageSql, isRole, uno, search, retry)
 	if err != nil {
 		return nil, utils.CustomErrorf(err)
 	}
@@ -180,8 +186,46 @@ func (s *ServiceWorker) GetWorkerSiteBaseList(ctx context.Context, page entity.P
 // func: 현장 근로자 개수 조회
 // @param
 // - searchTime string: 조회 날짜
-func (s *ServiceWorker) GetWorkerSiteBaseCount(ctx context.Context, search entity.WorkerDaily, retry string) (int, error) {
-	count, err := s.Store.GetWorkerSiteBaseCount(ctx, s.SafeDB, search, retry)
+func (s *ServiceWorker) GetWorkerSiteBaseCount(ctx context.Context, isRole bool, search entity.WorkerDaily, retry string) (int, error) {
+	uno, _ := auth.GetContext(ctx, auth.Uno{})
+
+	count, err := s.Store.GetWorkerSiteBaseCount(ctx, s.SafeDB, isRole, uno, search, retry)
+	if err != nil {
+		return 0, utils.CustomErrorf(err)
+	}
+	return count, nil
+}
+
+// func: 현장 근로자 조회 - 협력업체
+// @param
+// - page entity.PageSql: 정렬, 리스트 수
+// - search entity.WorkerSql: 검색 단어
+func (s *ServiceWorker) GetWorkerSiteBaseListByCompany(ctx context.Context, page entity.Page, search entity.WorkerDaily, retry string) (*entity.WorkerDailys, error) {
+	// regular type ->  sql type 변환
+	pageSql := entity.PageSql{}
+	pageSql, err := pageSql.OfPageSql(page)
+	if err != nil {
+		return nil, utils.CustomErrorf(err)
+	}
+
+	id, _ := auth.GetContext(ctx, auth.Uno{})
+
+	// 조회
+	list, err := s.Store.GetWorkerSiteBaseListByCompany(ctx, s.SafeDB, pageSql, id, search, retry)
+	if err != nil {
+		return nil, utils.CustomErrorf(err)
+	}
+
+	return list, nil
+}
+
+// func: 현장 근로자 개수 조회 - 협력업체
+// @param
+// - searchTime string: 조회 날짜
+func (s *ServiceWorker) GetWorkerSiteBaseByCompanyCount(ctx context.Context, search entity.WorkerDaily, retry string) (int, error) {
+	id, _ := auth.GetContext(ctx, auth.Uno{})
+
+	count, err := s.Store.GetWorkerSiteBaseByCompanyCount(ctx, s.SafeDB, id, search, retry)
 	if err != nil {
 		return 0, utils.CustomErrorf(err)
 	}

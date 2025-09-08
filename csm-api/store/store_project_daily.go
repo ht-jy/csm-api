@@ -59,21 +59,56 @@ func (r *Repository) GetProjectDailyContentList(ctx context.Context, db Queryer,
 }
 
 // 작업내용 조회
-func (r *Repository) GetDailyJobList(ctx context.Context, db Queryer, jno int64, targetDate string) (entity.ProjectDailys, error) {
+func (r *Repository) GetDailyJobList(ctx context.Context, db Queryer, isRole bool, jno int64, uno string, targetDate string) (entity.ProjectDailys, error) {
 	projectDailys := entity.ProjectDailys{}
 
-	query := `
-			SELECT 
-				IDX,
-				JNO,
-				CONTENT,
-				CONTENT_COLOR,
-				TARGET_DATE
-			FROM IRIS_DAILY_JOB
-			WHERE TO_CHAR(TARGET_DATE, 'YYYY-MM') = :1
-			AND (:2 = 0 OR (JNO = :3 OR JNO = 0))`
+	// 프로젝트 전체조회 OR 본인이 속한 프로젝트
+	roleCondition := ""
+	if !isRole {
+		// 협력업체는 ID로 검색해야하기 때문에
+		roleCondition = fmt.Sprintf(`
+									AND UNO = %s
+								UNION
+									SELECT JNO
+									FROM JOB_SUBCON_INFO
+									WHERE ID = %s
+								`, uno, uno)
+	}
 
-	if err := db.SelectContext(ctx, &projectDailys, query, targetDate, jno, jno); err != nil {
+	// 모든 스케줄 OR 선택한 프로젝트
+	condition := ""
+	if jno == 0 {
+		condition = "1 = 1"
+	} else {
+		condition = fmt.Sprintf("D.JNO = %d", jno)
+	}
+
+	query := fmt.Sprintf(`
+			WITH USER_IN_JNO AS (
+						SELECT DISTINCT J.JNO
+						FROM S_JOB_MEMBER_LIST M, IRIS_SITE_JOB J 
+						WHERE 
+							J.JNO = M.JNO(+)
+							AND M.JNO IS NOT NULL
+							AND J.IS_USE = 'Y'
+							%s
+						UNION
+							SELECT 0 FROM DUAL
+					)
+			SELECT 
+				D.IDX,
+				D.JNO,
+				D.CONTENT,
+				D.CONTENT_COLOR,
+				D.TARGET_DATE
+			FROM IRIS_DAILY_JOB D, USER_IN_JNO J
+			WHERE
+				D.JNO = J.JNO
+				AND TO_CHAR(TARGET_DATE, 'YYYY-MM') = :1
+				AND %s
+		`, roleCondition, condition)
+
+	if err := db.SelectContext(ctx, &projectDailys, query, targetDate); err != nil {
 		return entity.ProjectDailys{}, utils.CustomErrorf(err)
 	}
 	return projectDailys, nil

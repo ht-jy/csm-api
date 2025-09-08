@@ -84,7 +84,7 @@ type ProjectSettingStore interface {
 	MergeProjectSetting(ctx context.Context, tx Execer, project entity.ProjectSetting) (int64, error)
 	GetCheckProjectSetting(ctx context.Context, db Queryer) (*entity.ProjectSettings, error)
 	GetCheckProjectManHours(ctx context.Context, db Queryer) (*entity.ProjectSettings, error)
-	GetProjectSetting(ctx context.Context, db Queryer, jno int64) (*entity.ProjectSettings, error)
+	GetProjectSetting(ctx context.Context, db Queryer, isRole bool, uno string, jno int64) (*entity.ProjectSettings, error)
 	DeleteManHour(ctx context.Context, tx Execer, mhno int64) error
 	ProjectSettingLog(ctx context.Context, tx Execer, setting entity.ProjectSetting) error
 	ManHourLog(ctx context.Context, tx Execer, manhour entity.ManHour) error
@@ -97,7 +97,7 @@ type OrganizationStore interface {
 
 type ProjectDailyStore interface {
 	GetProjectDailyContentList(ctx context.Context, db Queryer, jno int64, targetDate time.Time) (*entity.ProjectDailys, error)
-	GetDailyJobList(ctx context.Context, db Queryer, jno int64, targetDate string) (entity.ProjectDailys, error)
+	GetDailyJobList(ctx context.Context, db Queryer, isRole bool, jno int64, uno string, targetDate string) (entity.ProjectDailys, error)
 	AddDailyJob(ctx context.Context, tx Execer, project entity.ProjectDailys) error
 	ModifyDailyJob(ctx context.Context, tx Execer, project entity.ProjectDaily) error
 	RemoveDailyJob(ctx context.Context, tx Execer, idx int64) error
@@ -121,8 +121,8 @@ type CodeStore interface {
 }
 
 type NoticeStore interface {
-	GetNoticeList(ctx context.Context, db Queryer, uno null.Int, role int, pageSql entity.PageSql, search entity.Notice) (*entity.Notices, error)
-	GetNoticeListCount(ctx context.Context, db Queryer, uno null.Int, role int, search entity.Notice) (int, error)
+	GetNoticeList(ctx context.Context, db Queryer, uno string, isRole bool, pageSql entity.PageSql, search entity.Notice) (*entity.Notices, error)
+	GetNoticeListCount(ctx context.Context, db Queryer, uno string, isRole bool, search entity.Notice) (int, error)
 	AddNotice(ctx context.Context, tx Execer, notice entity.Notice) error
 	ModifyNotice(ctx context.Context, tx Execer, notice entity.Notice) error
 	RemoveNotice(ctx context.Context, tx Execer, idx int64) error
@@ -139,8 +139,8 @@ type DeviceStore interface {
 }
 
 type WorkerStore interface {
-	GetWorkerTotalList(ctx context.Context, db Queryer, page entity.PageSql, search entity.Worker, retry string) (*entity.Workers, error)
-	GetWorkerTotalCount(ctx context.Context, db Queryer, search entity.Worker, retry string) (int, error)
+	GetWorkerTotalList(ctx context.Context, db Queryer, page entity.PageSql, isRole bool, uno string, search entity.Worker, retry string) (*entity.Workers, error)
+	GetWorkerTotalCount(ctx context.Context, db Queryer, isRole bool, uno string, search entity.Worker, retry string) (int, error)
 	GetAbsentWorkerList(ctx context.Context, db Queryer, page entity.PageSql, search entity.WorkerDaily, retry string) (*entity.Workers, error)
 	GetAbsentWorkerCount(ctx context.Context, db Queryer, search entity.WorkerDaily, retry string) (int, error)
 	GetWorkerDepartList(ctx context.Context, db Queryer, jno int64) ([]string, error)
@@ -148,8 +148,10 @@ type WorkerStore interface {
 	MergeWorker(ctx context.Context, tx Execer, worker entity.Worker) (int64, error)
 	ModifyWorker(ctx context.Context, tx Execer, worker entity.Worker) error
 	RemoveWorker(ctx context.Context, tx Execer, worker entity.Worker) error
-	GetWorkerSiteBaseList(ctx context.Context, db Queryer, page entity.PageSql, search entity.WorkerDaily, retry string) (*entity.WorkerDailys, error)
-	GetWorkerSiteBaseCount(ctx context.Context, db Queryer, search entity.WorkerDaily, retry string) (int, error)
+	GetWorkerSiteBaseList(ctx context.Context, db Queryer, page entity.PageSql, isRole bool, uno string, search entity.WorkerDaily, retry string) (*entity.WorkerDailys, error)
+	GetWorkerSiteBaseCount(ctx context.Context, db Queryer, isRole bool, uno string, search entity.WorkerDaily, retry string) (int, error)
+	GetWorkerSiteBaseListByCompany(ctx context.Context, db Queryer, page entity.PageSql, id string, search entity.WorkerDaily, retry string) (*entity.WorkerDailys, error)
+	GetWorkerSiteBaseByCompanyCount(ctx context.Context, db Queryer, id string, search entity.WorkerDaily, retry string) (int, error)
 	MergeSiteBaseWorker(ctx context.Context, tx Execer, workers entity.WorkerDailys) error
 	MergeSiteBaseWorkerLog(ctx context.Context, tx Execer, workers entity.WorkerDailys) error
 	ModifyWorkerDeadline(ctx context.Context, tx Execer, workers entity.WorkerDailys) error
@@ -200,7 +202,7 @@ type EquipStore interface {
 }
 
 type ScheduleStore interface {
-	GetRestScheduleList(ctx context.Context, db Queryer, jno int64, year string, month string) (entity.RestSchedules, error)
+	GetRestScheduleList(ctx context.Context, db Queryer, isRole bool, jno int64, uno string, year string, month string) (entity.RestSchedules, error)
 	AddRestSchedule(ctx context.Context, tx Execer, schedule entity.RestSchedules) error
 	ModifyRestSchedule(ctx context.Context, tx Execer, schedule entity.RestSchedule) error
 	RemoveRestSchedule(ctx context.Context, tx Execer, cno int64) error

@@ -11,10 +11,9 @@ import (
 )
 
 type ServiceNotice struct {
-	SafeDB    store.Queryer
-	SafeTDB   store.Beginner
-	Store     store.NoticeStore
-	UserStore store.UserStore
+	SafeDB  store.Queryer
+	SafeTDB store.Beginner
+	Store   store.NoticeStore
 }
 
 // func: 공지사항 전체 조회
@@ -23,15 +22,7 @@ type ServiceNotice struct {
 func (s *ServiceNotice) GetNoticeList(ctx context.Context, page entity.Page, isRole bool, search entity.Notice) (*entity.Notices, error) {
 
 	// 사용자 정보 가져오기
-	unoString, _ := auth.GetContext(ctx, auth.Uno{})
-	uno := utils.ParseNullInt(unoString)
-
-	var roleInt int
-	if isRole {
-		roleInt = 1
-	} else {
-		roleInt = 0
-	}
+	uno, _ := auth.GetContext(ctx, auth.Uno{})
 
 	// 페이지 변환
 	pageSql := entity.PageSql{}
@@ -41,7 +32,7 @@ func (s *ServiceNotice) GetNoticeList(ctx context.Context, page entity.Page, isR
 		return nil, utils.CustomErrorf(err)
 	}
 
-	notices, err := s.Store.GetNoticeList(ctx, s.SafeDB, uno, roleInt, pageSql, search)
+	notices, err := s.Store.GetNoticeList(ctx, s.SafeDB, uno, isRole, pageSql, search)
 	if err != nil {
 		return &entity.Notices{}, utils.CustomErrorf(err)
 	}
@@ -54,17 +45,9 @@ func (s *ServiceNotice) GetNoticeList(ctx context.Context, page entity.Page, isR
 // -
 func (s *ServiceNotice) GetNoticeListCount(ctx context.Context, isRole bool, search entity.Notice) (int, error) {
 
-	unoString, _ := auth.GetContext(ctx, auth.Uno{})
-	uno := utils.ParseNullInt(unoString)
+	uno, _ := auth.GetContext(ctx, auth.Uno{})
 
-	var roleInt int
-	if isRole {
-		roleInt = 1
-	} else {
-		roleInt = 0
-	}
-
-	count, err := s.Store.GetNoticeListCount(ctx, s.SafeDB, uno, roleInt, search)
+	count, err := s.Store.GetNoticeListCount(ctx, s.SafeDB, uno, isRole, search)
 	if err != nil {
 		return 0, utils.CustomErrorf(err)
 	}
