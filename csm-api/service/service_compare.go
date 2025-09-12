@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"csm-api/auth"
 	"csm-api/entity"
 	"csm-api/store"
 	"csm-api/txutil"
@@ -17,8 +18,11 @@ type ServiceCompare struct {
 }
 
 // 일일 근로자 비교 리스트
-func (s *ServiceCompare) GetCompareList(ctx context.Context, compare entity.Compare, retry string, order string) ([]entity.Compare, error) {
-	workerlist, err := s.Store.GetDailyWorkerList(ctx, s.SafeDB, compare, retry, order)
+func (s *ServiceCompare) GetCompareList(ctx context.Context, compare entity.Compare, isRole bool, retry string, order string) ([]entity.Compare, error) {
+
+	uno, _ := auth.GetContext(ctx, auth.Uno{})
+
+	workerlist, err := s.Store.GetDailyWorkerList(ctx, s.SafeDB, compare, isRole, uno, retry, order)
 	if err != nil {
 		return nil, utils.CustomErrorf(err)
 	}

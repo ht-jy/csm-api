@@ -216,7 +216,7 @@ type UploadFileStore interface {
 }
 
 type CompareStore interface {
-	GetDailyWorkerList(ctx context.Context, db Queryer, compare entity.Compare, retry string, order string) (entity.WorkerDailys, error)
+	GetDailyWorkerList(ctx context.Context, db Queryer, compare entity.Compare, isRole bool, uno string, retry string, order string) (entity.WorkerDailys, error)
 	GetTbmList(ctx context.Context, db Queryer, compare entity.Compare, retry string, order string) ([]entity.Tbm, error)
 	GetDeductionList(ctx context.Context, db Queryer, compare entity.Compare, retry string, order string) ([]entity.Deduction, error)
 	ModifyWorkerCompareApply(ctx context.Context, tx Execer, workers entity.WorkerDailys) error
