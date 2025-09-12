@@ -8,8 +8,15 @@ import (
 )
 
 // 일일 근로자 비교 - 근로자 리스트
-func (r *Repository) GetDailyWorkerList(ctx context.Context, db Queryer, compare entity.Compare, retry string, order string) (entity.WorkerDailys, error) {
+func (r *Repository) GetDailyWorkerList(ctx context.Context, db Queryer, compare entity.Compare, isRole bool, uno string, retry string, order string) (entity.WorkerDailys, error) {
 	var list entity.WorkerDailys
+
+	roleCondition := ""
+	if isRole {
+		roleCondition = "1 = 1"
+	} else {
+		roleCondition = fmt.Sprintf(`UNO = %s`, uno)
+	}
 
 	var columns []string
 	columns = append(columns, "T2.USER_NM")
@@ -40,6 +47,11 @@ func (r *Repository) GetDailyWorkerList(ctx context.Context, db Queryer, compare
 	}
 
 	query := fmt.Sprintf(`
+		WITH USER_IN_JNO AS (
+				SELECT DISTINCT JNO 
+				FROM S_JOB_MEMBER_LIST
+				WHERE %s
+		)
 		SELECT
 		    T1.USER_KEY,
 			T1.SNO,
@@ -59,10 +71,13 @@ func (r *Repository) GetDailyWorkerList(ctx context.Context, db Queryer, compare
 			T1.COMPARE_STATE,
 			T1.IS_DEADLINE,
 			T3.DEVICE_NM
-		FROM IRIS_WORKER_DAILY_SET T1
-		LEFT JOIN IRIS_WORKER_SET T2 ON T1.SNO = T2.SNO AND T1.USER_KEY = T2.USER_KEY --T1.SNO = T2.SNO AND T1.USER_ID = T2.USER_ID
-		LEFT JOIN IRIS_DEVICE_SET T3 ON T1.DNO = T3.DNO 
-		WHERE TRUNC(T1.RECORD_DATE) = TRUNC(:1)
+		FROM IRIS_WORKER_DAILY_SET T1, IRIS_WORKER_SET T2, IRIS_DEVICE_SET T3, USER_IN_JNO T4
+		WHERE 
+			T1.SNO = T2.SNO(+) 
+			AND T1.DNO = T3.DNO(+) 
+			AND T1.JNO = T4.JNO
+		    AND TRUNC(T1.RECORD_DATE) = TRUNC(:1)
+		  	AND T1.USER_KEY = T2.USER_KEY --T1.SNO = T2.SNO AND T1.USER_ID = T2.USER_ID
 			AND T1.SNO = :2
 			AND T2.IS_DEL = 'N'
 			AND (
@@ -70,7 +85,7 @@ func (r *Repository) GetDailyWorkerList(ctx context.Context, db Queryer, compare
 				OR (T1.JNO != :4 AND T1.COMPARE_STATE NOT IN ('S', 'X'))
 			)
 			%s
-			%s`, retryCondition, orderBy)
+			%s`, roleCondition, retryCondition, orderBy)
 
 	if err := db.SelectContext(ctx, &list, query, compare.RecordDate, compare.Sno, compare.Jno, compare.Jno); err != nil {
 		return list, utils.CustomErrorf(err)

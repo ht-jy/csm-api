@@ -56,7 +56,7 @@ type ProjectStore interface {
 	GetProjectList(ctx context.Context, db Queryer, sno int64, targetDate time.Time) (*entity.ProjectInfos, error)
 	GetProjectWorkerCountList(ctx context.Context, db Queryer, targetDate time.Time) (*entity.ProjectInfos, error)
 	GetProjectSafeWorkerCountList(ctx context.Context, db Queryer, targetDate time.Time) (*entity.ProjectSafeCounts, error)
-	GetProjectNmList(ctx context.Context, db Queryer, role int, uno int64) (*entity.ProjectInfos, error)
+	GetProjectNmList(ctx context.Context, db Queryer, isRole bool, uno string) (*entity.ProjectInfos, error)
 	GetUsedProjectList(ctx context.Context, db Queryer, pageSql entity.PageSql, search entity.JobInfo, retry string, includeJno string, snoString string) (*entity.JobInfos, error)
 	GetUsedProjectCount(ctx context.Context, db Queryer, search entity.JobInfo, retry string, includeJno string, snoString string) (int, error)
 	GetAllProjectList(ctx context.Context, db Queryer, pageSql entity.PageSql, search entity.JobInfo, isAll int, retry string) (*entity.JobInfos, error)
@@ -216,7 +216,7 @@ type UploadFileStore interface {
 }
 
 type CompareStore interface {
-	GetDailyWorkerList(ctx context.Context, db Queryer, compare entity.Compare, retry string, order string) (entity.WorkerDailys, error)
+	GetDailyWorkerList(ctx context.Context, db Queryer, compare entity.Compare, isRole bool, uno string, retry string, order string) (entity.WorkerDailys, error)
 	GetTbmList(ctx context.Context, db Queryer, compare entity.Compare, retry string, order string) ([]entity.Tbm, error)
 	GetDeductionList(ctx context.Context, db Queryer, compare entity.Compare, retry string, order string) ([]entity.Deduction, error)
 	ModifyWorkerCompareApply(ctx context.Context, tx Execer, workers entity.WorkerDailys) error

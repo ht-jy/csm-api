@@ -204,7 +204,7 @@ type UploadFileService interface {
 }
 
 type CompareService interface {
-	GetCompareList(ctx context.Context, compare entity.Compare, retry string, order string) ([]entity.Compare, error)
+	GetCompareList(ctx context.Context, compare entity.Compare, isRole bool, retry string, order string) ([]entity.Compare, error)
 	ModifyWorkerCompareApply(ctx context.Context, workers entity.WorkerDailys) error
 }
 

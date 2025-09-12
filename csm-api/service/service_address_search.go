@@ -141,7 +141,7 @@ func (s *ServiceAddressSearch) GetAPISiteMapPoint(roadAddress string) (*entity.M
 			} `json:"result"`
 			Error struct {
 				Level string `json:"level"`
-				Code  int    `json:"code"`
+				Code  string `json:"code"`
 				Text  string `json:"text"`
 			}
 		} `json:"response"`

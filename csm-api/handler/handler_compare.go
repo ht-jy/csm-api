@@ -6,6 +6,7 @@ import (
 	"csm-api/utils"
 	"encoding/json"
 	"net/http"
+	"strconv"
 )
 
 type HandlerCompare struct {
@@ -20,6 +21,14 @@ func (h *HandlerCompare) List(w http.ResponseWriter, r *http.Request) {
 	order := r.URL.Query().Get("order")
 	retrySearch := r.URL.Query().Get("retry_search")
 
+	// 전체 조회할지 본인이 속한 프로젝트만 조회할지 권한
+	isRoleStr := r.URL.Query().Get("isRole")
+	isRole, err := strconv.ParseBool(isRoleStr)
+	if err != nil {
+		BadRequestResponse(r.Context(), w)
+		return
+	}
+
 	if snoString == "" || jnoString == "" || startDateString == "" {
 		BadRequestResponse(r.Context(), w)
 		return
@@ -31,7 +40,7 @@ func (h *HandlerCompare) List(w http.ResponseWriter, r *http.Request) {
 		RecordDate: utils.ParseNullDate(startDateString),
 	}
 
-	list, err := h.Service.GetCompareList(r.Context(), compare, retrySearch, order)
+	list, err := h.Service.GetCompareList(r.Context(), compare, isRole, retrySearch, order)
 	if err != nil {
 		FailResponse(r.Context(), w, err)
 		return

@@ -109,21 +109,9 @@ func (p *ServiceProject) GetProjectWorkerCountList(ctx context.Context, targetDa
 // @param
 // -
 func (p *ServiceProject) GetProjectNmList(ctx context.Context, isRole bool) (*entity.ProjectInfos, error) {
-	unoString, _ := auth.GetContext(ctx, auth.Uno{})
+	uno, _ := auth.GetContext(ctx, auth.Uno{})
 
-	var roleInt int
-	if isRole { // 권한이 있는 경우
-		roleInt = 1
-	} else {
-		roleInt = 0
-	}
-
-	uno, err := strconv.ParseInt(unoString, 10, 64)
-	if err != nil {
-		return nil, utils.CustomErrorf(err)
-	}
-
-	nmList, err := p.Store.GetProjectNmList(ctx, p.SafeDB, roleInt, uno)
+	nmList, err := p.Store.GetProjectNmList(ctx, p.SafeDB, isRole, uno)
 	if err != nil {
 		return &entity.ProjectInfos{}, utils.CustomErrorf(err)
 	}
