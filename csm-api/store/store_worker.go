@@ -386,7 +386,7 @@ func (r *Repository) AddWorker(ctx context.Context, tx Execer, worker entity.Wor
 			WHERE USER_ID = :15
 			  AND USER_NM = :16
 			  AND (
-				(REG_NO = COMMON.FUNC_ENCODE(:17)) OR (REG_NO IS NULL AND :18 IS NULL)
+				(COMMON.FUNC_DECODE(REG_NO) = :17) OR (REG_NO IS NULL AND :18 IS NULL)
 			  )
 			AND IS_DEL = 'N'
 		)`
@@ -498,7 +498,7 @@ func (r *Repository) MergeWorker(ctx context.Context, tx Execer, worker entity.W
 				w.USER_ID = ws.USER_ID
 				AND ws.USER_NM = w.USER_NM
 				AND (
-					(ws.REG_NO = w.REG_NO) OR (ws.REG_NO IS NULL AND ws.REG_NO IS NULL)
+					(COMMON.FUNC_DECODE(ws.REG_NO) = COMMON.FUNC_DECODE(w.REG_NO)) OR (ws.REG_NO IS NULL AND ws.REG_NO IS NULL)
 				)
 				AND ws.IS_DEL = 'N'
 		) W2
@@ -1665,12 +1665,12 @@ func (r *Repository) GetHistoryDailyWorkers(ctx context.Context, db Queryer, sta
 						'01', '추가', 
 						'02', '수정', 
 						'03', '마감', 
-						'04', '일괄공수입력', 
+						'04', '공수입력', 
 						'05', '프로젝트변경', 
 						'06', '삭제', 
 						'07', '마감취소', 
 						'08', '수정/마감',
-						'09', '엑셀업로드',  
+						'09', '근태업로드',  
 						''
 				) AS REASON_TYPE,
 				T1.REASON,

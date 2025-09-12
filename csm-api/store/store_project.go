@@ -342,19 +342,24 @@ func (r *Repository) GetProjectSafeWorkerCountList(ctx context.Context, db Query
 // func: 프로젝트 조회(이름)
 // @param
 // -
-func (r *Repository) GetProjectNmList(ctx context.Context, db Queryer, role int, uno int64) (*entity.ProjectInfos, error) {
+func (r *Repository) GetProjectNmList(ctx context.Context, db Queryer, isRole bool, uno string) (*entity.ProjectInfos, error) {
 	projectInfos := entity.ProjectInfos{}
 
-	sql := `
+	roleCondition := ""
+	if isRole {
+		roleCondition = "AND 1 = 1"
+	} else {
+		roleCondition = fmt.Sprintf("AND (M.UNO = %s OR S.ID = %s)", uno, uno)
+	}
+
+	sql := fmt.Sprintf(`
 		WITH USER_IN_JNO AS (
-			SELECT JNO
-			FROM S_JOB_MEMBER_LIST
-			WHERE 1 = :1 OR UNO = :2
-		UNION
-			SELECT JNO
-			FROM JOB_SUBCON_INFO
-			WHERE ID = :3
-	)
+			SELECT DISTINCT(M.JNO)
+			FROM S_JOB_MEMBER_LIST M, JOB_SUBCON_INFO S
+			WHERE
+				M.JNO = S.JNO
+				%s
+		)
 			SELECT
     			t1.SNO,
 				t1.JNO,
@@ -371,8 +376,9 @@ func (r *Repository) GetProjectNmList(ctx context.Context, db Queryer, role int,
 			AND t1.IS_USE = 'Y'
 			AND t1.STATUS = 'Y' 
 			ORDER BY
-				t1.IS_DEFAULT DESC, JNO DESC`
-	if err := db.SelectContext(ctx, &projectInfos, sql, role, uno, uno); err != nil {
+				t1.IS_DEFAULT DESC, JNO DESC`, roleCondition)
+
+	if err := db.SelectContext(ctx, &projectInfos, sql); err != nil {
 		return &projectInfos, utils.CustomErrorf(err)
 	}
 

@@ -56,7 +56,7 @@ type ProjectStore interface {
 	GetProjectList(ctx context.Context, db Queryer, sno int64, targetDate time.Time) (*entity.ProjectInfos, error)
 	GetProjectWorkerCountList(ctx context.Context, db Queryer, targetDate time.Time) (*entity.ProjectInfos, error)
 	GetProjectSafeWorkerCountList(ctx context.Context, db Queryer, targetDate time.Time) (*entity.ProjectSafeCounts, error)
-	GetProjectNmList(ctx context.Context, db Queryer, role int, uno int64) (*entity.ProjectInfos, error)
+	GetProjectNmList(ctx context.Context, db Queryer, isRole bool, uno string) (*entity.ProjectInfos, error)
 	GetUsedProjectList(ctx context.Context, db Queryer, pageSql entity.PageSql, search entity.JobInfo, retry string, includeJno string, snoString string) (*entity.JobInfos, error)
 	GetUsedProjectCount(ctx context.Context, db Queryer, search entity.JobInfo, retry string, includeJno string, snoString string) (int, error)
 	GetAllProjectList(ctx context.Context, db Queryer, pageSql entity.PageSql, search entity.JobInfo, isAll int, retry string) (*entity.JobInfos, error)
